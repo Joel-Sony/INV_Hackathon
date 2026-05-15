@@ -2042,8 +2042,145 @@ select.form-input { appearance: none; cursor: pointer; }
 .fab-reminders:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 8px 30px var(--accent-glow); }
 .fab-reminders .badge { position: absolute; top: -5px; right: -5px; background: var(--error); color: white; font-size: 0.75rem; font-weight: bold; width: 24px; height: 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-primary); }
 
-/* ===== Map Section ===== */
-.map-section { animation: fadeInUp 0.5s ease-out; margin-top: 20px; }
+/* ══════════════════════════════════════
+   MAP SECTION (Leaflet + new theme vars)
+══════════════════════════════════════ */
+.map-section { margin-top: 20px; animation: fadeUp 0.5s var(--ease) both; }
+.leaflet-container {
+    font-family: var(--sans);
+    background: var(--bg) !important;
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border);
+}
+.leaflet-popup-content { margin: 12px 16px; font-weight: 500; font-family: var(--sans); }
+.leaflet-bar a { background-color: var(--surface) !important; color: var(--text) !important; border-bottom: 1px solid var(--border) !important; }
+.leaflet-bar a:hover { background-color: var(--surface2) !important; }
+
+/* ══════════════════════════════════════
+   MODAL (reminder)
+══════════════════════════════════════ */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(17,24,39,0.45); backdrop-filter: blur(8px);
+    z-index: 1000; display: flex; align-items: center; justify-content: center;
+    padding: 20px; animation: fadeDown 0.25s var(--ease) both;
+}
+.modal-content {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-xl); width: 100%; max-width: 400px;
+    box-shadow: var(--shadow-lg); overflow: hidden;
+    animation: fadeUp 0.3s var(--spring) both;
+}
+.modal-header {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(to right, var(--teal-xl), var(--surface));
+}
+.modal-header h3 { font-family: var(--serif); font-size: 1.1rem; color: var(--text); margin: 0; }
+
+/* ══════════════════════════════════════
+   FORM ELEMENTS (shared)
+══════════════════════════════════════ */
+.form-label {
+    display: block; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-2); margin-bottom: 8px;
+}
+.form-input {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--border); border-radius: var(--r-sm);
+    background: var(--bg-warm); color: var(--text);
+    font-family: var(--sans); font-size: 14px;
+    transition: all 0.2s var(--ease); outline: none; display: block;
+}
+.form-input:focus { border-color: var(--teal-l); box-shadow: 0 0 0 3px rgba(3,105,161,0.1); }
+.form-input::placeholder { color: var(--text-3); }
+
+/* ══════════════════════════════════════
+   SHARED BUTTONS (.btn, .btn-primary, .btn-secondary)
+══════════════════════════════════════ */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px; border-radius: var(--r-sm);
+    font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.2s var(--ease);
+    text-decoration: none;
+}
+.btn-primary {
+    background: linear-gradient(135deg, var(--teal), var(--teal-l));
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(3,105,161,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(3,105,161,0.45); }
+.btn-secondary {
+    background: var(--surface2); color: var(--text-2);
+    border: 1.5px solid var(--border);
+}
+.btn-secondary:hover { background: var(--surface3); color: var(--text); }
+
+/* ══════════════════════════════════════
+   FAB — Reminders floating button
+══════════════════════════════════════ */
+.fab-reminders {
+    position: fixed; bottom: 28px; right: 28px;
+    width: 56px; height: 56px; border-radius: 28px;
+    background: linear-gradient(135deg, var(--teal), var(--teal-l));
+    border: none; color: white; font-size: 1.4rem;
+    box-shadow: 0 4px 20px rgba(3,105,161,0.4);
+    cursor: pointer; z-index: 900; transition: all 0.3s var(--spring);
+    display: flex; align-items: center; justify-content: center;
+}
+.fab-reminders:hover { transform: translateY(-4px) scale(1.06); box-shadow: 0 8px 28px rgba(3,105,161,0.5); }
+.fab-reminders .badge {
+    position: absolute; top: -5px; right: -5px;
+    background: var(--err); color: white;
+    font-size: 0.72rem; font-weight: 700;
+    width: 22px; height: 22px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg);
+}
+
+/* ══════════════════════════════════════
+   READ ALOUD BUTTON
+══════════════════════════════════════ */
+.btn-read-aloud {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-2); padding: 5px 12px; border-radius: 20px;
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s var(--ease); white-space: nowrap;
+}
+.btn-read-aloud:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-xl); }
+
+/* ══════════════════════════════════════
+   HERO LAYOUT FULLNESS FIX
+   Give hero section better proportions so
+   it fills the full viewport height nicely
+══════════════════════════════════════ */
+.hero {
+    grid-template-columns: 55% 45%;
+}
+.upload-side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE ADDITIONS
+══════════════════════════════════════ */
+@media (max-width: 640px) {
+    .dash-actions { grid-template-columns: 1fr; }
+    .rem-table { font-size: 0.78rem; }
+    .rem-table th, .rem-table td { padding: 8px; }
+    .dash-nav { flex-wrap: wrap; gap: 10px; }
+    .fab-reminders { bottom: 20px; right: 16px; width: 50px; height: 50px; }
+}
+
 .leaflet-container { font-family: var(--font); background: var(--bg-primary) !important; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--bg-card) !important; color: var(--text-primary) !important; border: 1px solid var(--border); backdrop-filter: blur(10px); }
 .leaflet-popup-content { margin: 12px 16px; font-weight: 500; font-family: var(--font); }

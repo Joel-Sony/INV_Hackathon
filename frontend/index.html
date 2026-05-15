@@ -8,6 +8,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -216,7 +217,22 @@
                 </div>
             </div>
 
-            <button class="btn-rescan" id="btn-scan-again">
+            <!-- Nearby Pharmacies Map -->
+            <div class="text-panel map-section" style="margin-top:24px;">
+                <div class="tp-head">
+                    <div class="tp-icon teal-icon">📍</div>
+                    <span class="tp-label">Nearby Pharmacies</span>
+                    <button id="btn-find-pharmacies" class="btn-scan" style="padding:8px 16px;font-size:13px;flex:none;">
+                        <span class="btn-glow"></span> Find Near Me
+                    </button>
+                </div>
+                <div id="map-container" style="display:none;">
+                    <p id="map-status" style="padding:16px 18px;color:var(--text-2);font-size:13px;"></p>
+                    <div id="pharmacy-map" style="height:340px;display:none;"></div>
+                </div>
+            </div>
+
+            <button class="btn-rescan" id="btn-scan-again" style="margin-top:24px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -236,7 +252,33 @@
 
     </div>
 
+    <!-- Reminder Modal -->
+    <div class="modal-overlay" id="reminder-modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔔 Set Reminder</h3>
+                <button id="btn-close-modal" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-2);">✕</button>
+            </div>
+            <div style="padding:22px;">
+                <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;">Medicine: <strong id="reminder-med-name" style="color:var(--teal);"></strong></p>
+                <label class="form-label">Daily reminder time</label>
+                <input type="time" id="reminder-time" class="form-input" style="margin-bottom:20px;">
+                <div style="display:flex;gap:10px;">
+                    <button id="btn-cancel-reminder" class="btn btn-secondary" style="flex:1;">Cancel</button>
+                    <button id="btn-save-reminder" class="btn btn-primary" style="flex:1;">Save Reminder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminders FAB -->
+    <button class="fab-reminders" id="btn-view-reminders" title="View Reminders">
+        🔔
+        <span class="badge" id="reminders-count" style="display:none;">0</span>
+    </button>
+
     <script src="app.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="canvas.js"></script>
 </body>
 
