@@ -238,7 +238,10 @@ function renderMedicines(medicines) {
                     <div class="med-name">${esc(med.name || 'Unknown Medicine')}</div>
                     <div class="med-dosage">${esc(med.dosage || '')} ${med.frequency ? '• ' + esc(med.frequency) : ''}</div>
                 </div>
-                <button class="btn-read-aloud" title="Read Aloud">🔊 Listen</button>
+                <div style="margin: 0 0 0 auto; display: flex; gap: 8px;">
+                    <button class="btn-read-aloud" title="Read Aloud">🔊 Listen</button>
+                    <button class="btn btn-outline btn-small" onclick="openReminderModal('${esc(med.name || 'Unknown Medicine').replace(/'/g, "\\'")}')" style="padding: 6px 10px; font-size: 0.75rem;">🔔 Set</button>
+                </div>
             </div>
             <div class="medicine-card-body">
                 ${med.purpose ? `<div class="med-field"><div class="med-label">Purpose</div><div class="med-value">${esc(med.purpose)}</div></div>` : ''}
@@ -271,4 +274,227 @@ btnScanAgain.addEventListener('click', () => {
     errorCard.style.display = 'none';
 });
 
-console.log('🏥 MediScan scan page loaded');
+console.log('🏥 MediScan frontend loaded');
+
+// ==========================================
+// ===== REMINDERS FEATURE =====
+// ==========================================
+
+const reminderModal = document.getElementById('reminder-modal');
+const btnCloseModal = document.getElementById('btn-close-modal');
+const btnCancelReminder = document.getElementById('btn-cancel-reminder');
+const btnSaveReminder = document.getElementById('btn-save-reminder');
+const reminderMedNameEl = document.getElementById('reminder-med-name');
+const reminderTimeInput = document.getElementById('reminder-time');
+const btnViewReminders = document.getElementById('btn-view-reminders');
+const remindersCountEl = document.getElementById('reminders-count');
+
+let currentReminderMed = '';
+let reminders = JSON.parse(localStorage.getItem('mediscan_reminders') || '[]');
+
+function updateRemindersCount() {
+    if (reminders.length > 0) {
+        remindersCountEl.textContent = reminders.length;
+        remindersCountEl.style.display = 'flex';
+    } else {
+        remindersCountEl.style.display = 'none';
+    }
+}
+
+// Request Notification Permission
+if ('Notification' in window) {
+    Notification.requestPermission();
+}
+
+// Open modal from medicine card
+window.openReminderModal = function(medName) {
+    currentReminderMed = medName;
+    reminderMedNameEl.textContent = medName;
+    reminderTimeInput.value = '';
+    reminderModal.style.display = 'flex';
+};
+
+function closeReminderModal() {
+    reminderModal.style.display = 'none';
+    currentReminderMed = '';
+}
+
+btnCloseModal.addEventListener('click', closeReminderModal);
+btnCancelReminder.addEventListener('click', closeReminderModal);
+
+btnSaveReminder.addEventListener('click', () => {
+    const time = reminderTimeInput.value;
+    if (!time) {
+        alert("Please select a time.");
+        return;
+    }
+    
+    // Check permission
+    if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission();
+    }
+
+    const newReminder = {
+        id: Date.now().toString(),
+        medicine: currentReminderMed,
+        time: time // Format: "HH:MM"
+    };
+
+    reminders.push(newReminder);
+    localStorage.setItem('mediscan_reminders', JSON.stringify(reminders));
+    updateRemindersCount();
+    closeReminderModal();
+    alert(`Reminder set for ${currentReminderMed} at ${time}`);
+});
+
+btnViewReminders.addEventListener('click', () => {
+    if (reminders.length === 0) {
+        alert("No active reminders.");
+        return;
+    }
+    let msg = "Active Reminders:\n\n";
+    reminders.forEach((r, i) => {
+        msg += `${i+1}. ${r.medicine} at ${r.time}\n`;
+    });
+    msg += "\n(Click OK to clear all reminders, or Cancel to keep them)";
+    
+    if (confirm(msg)) {
+        reminders = [];
+        localStorage.removeItem('mediscan_reminders');
+        updateRemindersCount();
+    }
+});
+
+// Reminder checking loop (every 30 seconds)
+setInterval(() => {
+    if (reminders.length === 0) return;
+    
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = `${hours}:${minutes}`;
+
+    // Prevent firing multiple times in the same minute
+    const lastFiredTime = localStorage.getItem('last_fired_time');
+    if (lastFiredTime === currentTime) return;
+
+    let fired = false;
+    reminders.forEach(r => {
+        if (r.time === currentTime) {
+            fired = true;
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('MediScan Reminder 💊', {
+                    body: `It's time to take: ${r.medicine}`,
+                    icon: '💊'
+                });
+            } else {
+                alert(`💊 Reminder: It's time to take ${r.medicine}`);
+            }
+        }
+    });
+
+    if (fired) {
+        localStorage.setItem('last_fired_time', currentTime);
+    }
+}, 30000);
+
+updateRemindersCount();
+
+// ==========================================
+// ===== PHARMACIES MAP FEATURE =====
+// ==========================================
+
+const btnFindPharmacies = document.getElementById('btn-find-pharmacies');
+const mapContainer = document.getElementById('map-container');
+const mapStatus = document.getElementById('map-status');
+const pharmacyMapEl = document.getElementById('pharmacy-map');
+let leafletMap = null;
+
+if (btnFindPharmacies) {
+    btnFindPharmacies.addEventListener('click', () => {
+        // Show map container
+        mapContainer.style.display = 'block';
+        mapStatus.style.display = 'block';
+        mapStatus.textContent = 'Requesting your location...';
+        pharmacyMapEl.style.display = 'none';
+
+        if (!navigator.geolocation) {
+            mapStatus.textContent = 'Geolocation is not supported by your browser.';
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                mapStatus.textContent = 'Location found. Searching for pharmacies...';
+                loadPharmaciesMap(lat, lon);
+            },
+            (error) => {
+                console.warn("Geolocation error, falling back to demo location:", error);
+                mapStatus.textContent = 'Demo Mode: Using Ernakulam...';
+                loadPharmaciesMap(9.9816, 76.2999);
+            },
+            { timeout: 5000 }
+        );
+    });
+}
+
+async function loadPharmaciesMap(lat, lon) {
+    try {
+        // Query Overpass API for pharmacies within ~2km radius
+        const query = `
+            [out:json];
+            node(around:2000, ${lat}, ${lon})[amenity=pharmacy];
+            out;
+        `;
+        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // Hide status, show map
+        mapStatus.style.display = 'none';
+        pharmacyMapEl.style.display = 'block';
+
+        // Initialize Leaflet map if not already done
+        if (!leafletMap) {
+            leafletMap = L.map('pharmacy-map').setView([lat, lon], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(leafletMap);
+        } else {
+            leafletMap.setView([lat, lon], 14);
+        }
+
+        // Add user marker
+        const userIcon = L.divIcon({
+            html: '<div style="background-color:#6366f1; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(99,102,241,0.8);"></div>',
+            className: 'user-marker'
+        });
+        L.marker([lat, lon], {icon: userIcon}).addTo(leafletMap)
+            .bindPopup('<b>You are here</b>').openPopup();
+
+        // Add pharmacy markers
+        if (data.elements && data.elements.length > 0) {
+            data.elements.forEach(pharmacy => {
+                const name = pharmacy.tags.name || 'Pharmacy';
+                const marker = L.marker([pharmacy.lat, pharmacy.lon]).addTo(leafletMap);
+                marker.bindPopup(`<b>💊 ${name}</b>`);
+            });
+        } else {
+            alert("No pharmacies found within 2km.");
+        }
+        
+        // Force Leaflet to recalculate size since we just unhid the div
+        setTimeout(() => {
+            leafletMap.invalidateSize();
+        }, 100);
+
+    } catch (error) {
+        console.error("Error fetching pharmacies:", error);
+        mapStatus.textContent = 'Failed to load pharmacies. Please try again later.';
+        mapStatus.style.display = 'block';
+        pharmacyMapEl.style.display = 'none';
+    }
+}

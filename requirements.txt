@@ -6,3 +6,5 @@ Pillow==9.2.0
 numpy==2.2.6
 openai==2.36.0
 python-dotenv==1.2.2
+apscheduler==3.10.4
+requests==2.31.0
