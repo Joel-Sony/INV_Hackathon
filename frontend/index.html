@@ -23,16 +23,17 @@
 
         <header class="header">
             <div class="header-inner">
-                <div class="logo">
+                <a href="dashboard.html" class="logo" style="text-decoration:none;">
                     <div class="logo-mark">Rx</div>
                     <span class="logo-name">MediScan</span>
-                </div>
+                </a>
                 <nav class="nav">
-                    <a href="#" class="nav-link active">Scanner</a>
-                    <a href="#" class="nav-link">History</a>
-                    <a href="#" class="nav-link">Medicines</a>
+                    <a href="index.html" class="nav-link active">🔬 Scanner</a>
+                    <a href="dashboard.html" class="nav-link">📋 Dashboard</a>
+                    <a href="reminders.html" class="nav-link">⏰ Reminders</a>
                 </nav>
                 <span class="ai-badge">AI-Powered</span>
+                <div id="header-auth" style="display:flex;align-items:center;gap:10px;margin-left:auto;"></div>
             </div>
         </header>
 
@@ -232,14 +233,22 @@
                 </div>
             </div>
 
-            <button class="btn-rescan" id="btn-scan-again" style="margin-top:24px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                    <path d="M3 3v5h5" />
-                </svg>
-                Scan Another Prescription
-            </button>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:28px;">
+                <button class="btn-rescan" id="btn-scan-again">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>
+                    Scan Another
+                </button>
+                <a href="dashboard.html" class="btn btn-primary" style="text-decoration:none;gap:6px;">
+                    📋 Go to Dashboard
+                </a>
+                <a href="reminders.html" class="btn btn-secondary" style="text-decoration:none;gap:6px;">
+                    ⏰ Reminders
+                </a>
+            </div>
         </section>
 
         <footer class="footer">
@@ -277,6 +286,27 @@
         <span class="badge" id="reminders-count" style="display:none;">0</span>
     </button>
 
+    <script src="auth.js"></script>
+    <script>
+        // Auth-aware header — show user info + logout if logged in, else show Sign In
+        (function() {
+            const headerAuth = document.getElementById('header-auth');
+            if (!headerAuth) return;
+            const token = localStorage.getItem('mediscan_token');
+            const userRaw = localStorage.getItem('mediscan_user');
+            if (token && userRaw) {
+                try {
+                    const user = JSON.parse(userRaw);
+                    headerAuth.innerHTML = `
+                        <span style="font-size:13px;color:var(--text-2);font-weight:500;">👤 ${user.name || user.email || 'User'}</span>
+                        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 14px;font-size:12px;">Sign Out</button>
+                    `;
+                } catch(e) {}
+            } else {
+                headerAuth.innerHTML = `<a href="login.html" class="btn btn-primary" style="padding:7px 16px;font-size:13px;text-decoration:none;">Sign In</a>`;
+            }
+        })();
+    </script>
     <script src="app.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="canvas.js"></script>

@@ -4,20 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediScan — Reminders</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="bg-blobs"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
     <div class="app-container">
         <nav class="dash-nav">
-            <div class="logo-section">
-                <div class="logo-icon" style="font-size:24px;">💊</div>
-                <a href="dashboard.html" class="logo-text" style="font-size:1.4rem;text-decoration:none;">MediScan</a>
+            <div class="logo-section" style="justify-content:flex-start;">
+                <div class="logo-icon" style="width:34px;height:34px;border-radius:9px;font-size:17px;">💊</div>
+                <a href="dashboard.html" class="logo-text" style="font-size:1.35rem;text-decoration:none;">MediScan</a>
             </div>
             <div class="nav-right">
-                <a href="dashboard.html" class="btn-nav">Dashboard</a>
-                <button class="btn-nav" onclick="logout()">Logout</button>
+                <span class="nav-user" id="nav-user"></span>
+                <a href="index.html" class="btn-nav">🔬 Scanner</a>
+                <a href="dashboard.html" class="btn-nav">📋 Dashboard</a>
+                <button class="btn-nav" onclick="logout()">Sign Out</button>
             </div>
         </nav>
 
@@ -81,13 +83,14 @@
             </section>
         </main>
 
-        <footer class="app-footer"><p>MediScan — Built for understanding your prescriptions</p></footer>
+        <footer class="app-footer"><p>MediScan — Built for clarity, not complexity &nbsp;·&nbsp; ⚠ Not a substitute for medical advice</p></footer>
     </div>
 
     <script src="auth.js"></script>
     <script>
     if (!requireAuth()) throw 'redirect';
     const user = getUser();
+    if (user) document.getElementById('nav-user').textContent = '👤 ' + user.name;
 
     // Pre-fill phone
     document.getElementById('r-phone').value = user?.phone || '';
