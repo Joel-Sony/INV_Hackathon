@@ -1,6 +1,7 @@
 /**
- * MediScan — Frontend Application Logic
- * Handles file upload, drag-drop, API calls, and pipeline results rendering.
+ * MediScan — Scan Page Logic
+ * Handles file upload, drag-drop, API calls, and medicine card rendering.
+ * Pipeline steps removed from output per user request.
  */
 
 const API_BASE = 'http://localhost:5000';
@@ -25,11 +26,8 @@ const resultsSection = document.getElementById('results-section');
 const progressTitle = document.getElementById('progress-title');
 const progressSubtitle = document.getElementById('progress-subtitle');
 
-const pipelineSteps = document.getElementById('pipeline-steps');
-const rawOcrCard = document.getElementById('raw-ocr-card');
-const rawOcrText = document.getElementById('raw-ocr-text');
 const cleanedTextCard = document.getElementById('cleaned-text-card');
-const cleanedText = document.getElementById('cleaned-text');
+const cleanedTextEl = document.getElementById('cleaned-text');
 const resultFilename = document.getElementById('result-filename');
 const medicinesContainer = document.getElementById('medicines-container');
 const errorCard = document.getElementById('error-card');
@@ -38,7 +36,7 @@ const errorMessage = document.getElementById('error-message');
 
 let selectedFile = null;
 
-// ===== File Selection =====
+// ===== Helpers =====
 
 function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
@@ -48,19 +46,31 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+function esc(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Get auth token if available (for saving prescriptions to user account)
+function getToken() { return localStorage.getItem('mediscan_token'); }
+function authHeaders() {
+    const t = getToken();
+    return t ? { 'Authorization': 'Bearer ' + t } : {};
+}
+
+// ===== File Selection =====
+
 function handleFileSelect(file) {
     if (!file) return;
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp', 'application/pdf'];
-    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|bmp|tiff|webp|pdf)$/i)) {
-        alert('Unsupported file type. Please upload JPG, PNG, PDF, WEBP, or TIFF.');
+    const allowed = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp', 'application/pdf'];
+    if (!allowed.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|bmp|tiff|webp|pdf)$/i)) {
+        alert('Unsupported file type.');
         return;
     }
-
-    if (file.size > 10 * 1024 * 1024) {
-        alert('File too large. Maximum size is 10 MB.');
-        return;
-    }
+    if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10 MB.'); return; }
 
     selectedFile = file;
     fileName.textContent = file.name;
@@ -68,10 +78,7 @@ function handleFileSelect(file) {
 
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            previewImage.src = e.target.result;
-            previewContainer.style.display = 'flex';
-        };
+        reader.onload = (e) => { previewImage.src = e.target.result; previewContainer.style.display = 'flex'; };
         reader.readAsDataURL(file);
     } else {
         previewContainer.style.display = 'none';
@@ -95,7 +102,6 @@ function clearFile() {
 
 dropZone.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
-
 dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
 dropZone.addEventListener('drop', (e) => {
@@ -103,7 +109,6 @@ dropZone.addEventListener('drop', (e) => {
     dropZone.classList.remove('drag-over');
     handleFileSelect(e.dataTransfer.files[0]);
 });
-
 btnRemove.addEventListener('click', clearFile);
 
 // ===== Section Transitions =====
@@ -115,17 +120,9 @@ function showSection(section) {
     section.style.display = 'block';
 }
 
-function setProgress(step, title, subtitle) {
-    const steps = ['upload', 'ocr', 'cleanup', 'explain'];
-    steps.forEach((s, i) => {
-        const el = document.getElementById('step-' + s);
-        if (!el) return;
-        el.classList.remove('active', 'done');
-        if (i < steps.indexOf(step)) el.classList.add('done');
-        if (s === step) el.classList.add('active');
-    });
-    if (title) progressTitle.textContent = title;
-    if (subtitle) progressSubtitle.textContent = subtitle;
+function setProgress(title, subtitle) {
+    progressTitle.textContent = title;
+    progressSubtitle.textContent = subtitle;
 }
 
 // ===== API Calls =====
@@ -134,17 +131,18 @@ async function uploadFile(endpoint) {
     if (!selectedFile) return;
 
     showSection(progressSection);
-    setProgress('upload', 'Uploading prescription...', 'Sending file to server');
+    setProgress('Uploading prescription...', 'Sending file to server');
 
     const formData = new FormData();
     formData.append('file', selectedFile);
 
     try {
-        await sleep(400);
-        setProgress('ocr', 'Running OCR...', 'Tesseract multi-pass extraction (15 attempts)');
+        await sleep(300);
+        setProgress('Processing...', 'Running OCR + AI analysis');
 
         const res = await fetch(`${API_BASE}${endpoint}`, {
             method: 'POST',
+            headers: authHeaders(),
             body: formData,
         });
 
@@ -154,106 +152,61 @@ async function uploadFile(endpoint) {
         }
 
         const data = await res.json();
-
-        if (endpoint === '/scan') {
-            setProgress('cleanup', 'LLM cleaning OCR text...', 'Fixing broken handwriting via OpenRouter');
-            await sleep(300);
-            setProgress('explain', 'Extracting medicines...', 'AI analyzing prescription');
-            await sleep(300);
-        }
-
-        showResults(data, endpoint);
+        showResults(data);
     } catch (err) {
         showSection(resultsSection);
-        rawOcrCard.style.display = 'none';
         cleanedTextCard.style.display = 'none';
         medicinesContainer.innerHTML = '';
-        pipelineSteps.innerHTML = '';
         showError('Upload Failed', err.message);
     }
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
 // ===== Display Results =====
 
-function showResults(data, endpoint) {
+function showResults(data) {
     showSection(resultsSection);
     errorCard.style.display = 'none';
-    rawOcrCard.style.display = 'none';
     cleanedTextCard.style.display = 'none';
     medicinesContainer.innerHTML = '';
-    pipelineSteps.innerHTML = '';
 
-    // Pipeline status badges
-    if (data.pipeline) {
-        renderPipeline(data.pipeline);
-    }
-
-    // Filename
     resultFilename.textContent = data.filename || selectedFile?.name || '';
 
-    // Raw OCR text
-    const rawText = data.raw_ocr || data.ocr_text || '';
-    if (rawText) {
-        rawOcrCard.style.display = 'block';
-        rawOcrText.textContent = rawText;
-    }
-
-    // Cleaned text (from LLM)
-    if (data.cleaned_text) {
+    // Show cleaned text (or raw OCR as fallback)
+    const textToShow = data.cleaned_text || data.raw_ocr || data.ocr_text || '';
+    if (textToShow) {
         cleanedTextCard.style.display = 'block';
-        cleanedText.textContent = data.cleaned_text;
+        cleanedTextEl.textContent = textToShow;
     }
 
     // Error
     if (data.error) {
-        showError(
-            data.status === 'partial' ? 'Partial Results' : 'Warning',
-            data.error
-        );
+        showError(data.status === 'partial' ? 'Partial Results' : 'Warning', data.error);
     }
 
     // Medicine cards
-    if (data.medicines && Array.isArray(data.medicines)) {
+    if (data.medicines && Array.isArray(data.medicines) && data.medicines.length > 0) {
         renderMedicines(data.medicines);
     }
 
-    // Upload-only: no OCR, no medicines
-    if (!rawText && !data.cleaned_text && !data.medicines) {
-        rawOcrCard.style.display = 'block';
-        rawOcrText.textContent = `✅ File uploaded successfully!\n\nFilename: ${data.filename}\nSize: ${formatBytes(data.size_bytes)}\nType: ${data.content_type}`;
+    // Upload-only with no text
+    if (!textToShow && (!data.medicines || data.medicines.length === 0)) {
+        cleanedTextCard.style.display = 'block';
+        cleanedTextEl.textContent = `✅ File uploaded successfully!\n\nFilename: ${data.filename}\nSize: ${formatBytes(data.size_bytes)}\nType: ${data.content_type}`;
     }
 }
 
-function renderPipeline(pipeline) {
-    const steps = [
-        { key: 'upload', label: '📤 Upload', icon: '📤' },
-        { key: 'ocr', label: '🔍 OCR', icon: '🔍' },
-        { key: 'llm_cleanup', label: '🧹 LLM Cleanup', icon: '🧹' },
-        { key: 'llm_explain', label: '💊 Medicine Extract', icon: '💊' },
-    ];
+// ===== TTS =====
 
-    pipelineSteps.innerHTML = '';
-
-    steps.forEach((step, i) => {
-        const status = pipeline[step.key] || 'pending';
-        const statusClass = status === 'success' ? 'success' : (status.startsWith('failed') ? 'failed' : 'pending');
-        const statusIcon = status === 'success' ? '✓' : (status.startsWith('failed') ? '✗' : '⏳');
-
-        const el = document.createElement('span');
-        el.className = `pipeline-step ${statusClass}`;
-        el.textContent = `${statusIcon} ${step.label}`;
-        pipelineSteps.appendChild(el);
-
-        if (i < steps.length - 1) {
-            const arrow = document.createElement('span');
-            arrow.className = 'pipeline-arrow';
-            arrow.textContent = '→';
-            pipelineSteps.appendChild(arrow);
-        }
-    });
+function readAloud(med) {
+    if (!('speechSynthesis' in window)) { alert('TTS not supported in this browser.'); return; }
+    window.speechSynthesis.cancel();
+    const warnings = med.warnings && med.warnings.length > 0 ? ` Important warnings: ${med.warnings.join('. ')}.` : '';
+    const text = `${med.name}. ${med.plain_english || ''}. Take ${med.dosage || ''}, ${med.frequency || ''}.${warnings}`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
 }
+
+// ===== Render Medicine Cards =====
 
 function renderMedicines(medicines) {
     if (!medicines || medicines.length === 0) return;
@@ -265,24 +218,12 @@ function renderMedicines(medicines) {
 
         let sideEffectsHtml = '';
         if (med.side_effects && med.side_effects.length > 0) {
-            sideEffectsHtml = `
-                <div class="med-field">
-                    <div class="med-label">Side Effects</div>
-                    <div class="med-tags">
-                        ${med.side_effects.map(se => `<span class="med-tag">${esc(se)}</span>`).join('')}
-                    </div>
-                </div>`;
+            sideEffectsHtml = `<div class="med-field"><div class="med-label">Side Effects</div><div class="med-tags">${med.side_effects.map(se => `<span class="med-tag">${esc(se)}</span>`).join('')}</div></div>`;
         }
 
         let warningsHtml = '';
         if (med.warnings && med.warnings.length > 0) {
-            warningsHtml = `
-                <div class="med-field">
-                    <div class="med-label">Warnings</div>
-                    <div class="med-tags">
-                        ${med.warnings.map(w => `<span class="med-tag warning">${esc(w)}</span>`).join('')}
-                    </div>
-                </div>`;
+            warningsHtml = `<div class="med-field"><div class="med-label">Warnings</div><div class="med-tags">${med.warnings.map(w => `<span class="med-tag warning">${esc(w)}</span>`).join('')}</div></div>`;
         }
 
         let plainEnglish = '';
@@ -297,6 +238,7 @@ function renderMedicines(medicines) {
                     <div class="med-name">${esc(med.name || 'Unknown Medicine')}</div>
                     <div class="med-dosage">${esc(med.dosage || '')} ${med.frequency ? '• ' + esc(med.frequency) : ''}</div>
                 </div>
+                <button class="btn-read-aloud" title="Read Aloud">🔊 Listen</button>
             </div>
             <div class="medicine-card-body">
                 ${med.purpose ? `<div class="med-field"><div class="med-label">Purpose</div><div class="med-value">${esc(med.purpose)}</div></div>` : ''}
@@ -306,6 +248,9 @@ function renderMedicines(medicines) {
             ${plainEnglish}
         `;
         medicinesContainer.appendChild(card);
+
+        // TTS button
+        card.querySelector('.btn-read-aloud').addEventListener('click', () => readAloud(med));
     });
 }
 
@@ -313,12 +258,6 @@ function showError(title, message) {
     errorCard.style.display = 'block';
     errorTitle.textContent = '⚠️ ' + title;
     errorMessage.textContent = message;
-}
-
-function esc(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // ===== Button Handlers =====
@@ -332,4 +271,4 @@ btnScanAgain.addEventListener('click', () => {
     errorCard.style.display = 'none';
 });
 
-console.log('🏥 MediScan frontend loaded');
+console.log('🏥 MediScan scan page loaded');

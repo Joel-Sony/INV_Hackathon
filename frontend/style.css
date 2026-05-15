@@ -354,8 +354,126 @@ body {
     .result-header { flex-wrap: wrap; }
 }
 
-/* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ===== Dashboard Nav ===== */
+.dash-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; margin-bottom: 32px; border-bottom: 1px solid var(--border);
+}
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.nav-user { font-size: 0.85rem; color: var(--text-secondary); }
+.btn-nav {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary);
+    padding: 6px 14px; border-radius: var(--radius-sm); font-family: var(--font);
+    font-size: 0.82rem; cursor: pointer; transition: var(--transition); text-decoration: none;
+}
+.btn-nav:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ===== Dashboard Actions ===== */
+.dash-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+.action-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    backdrop-filter: blur(20px); padding: 28px 20px; text-align: center;
+    text-decoration: none; transition: var(--transition); cursor: pointer;
+}
+.action-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow-glow); }
+.action-icon { font-size: 2rem; display: block; margin-bottom: 10px; }
+.action-label { color: var(--text-primary); font-weight: 600; font-size: 0.95rem; }
+
+/* ===== Dashboard Sections ===== */
+.dash-section { margin-bottom: 32px; }
+.dash-section h2, .dash-section h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+
+/* ===== Prescription Cards ===== */
+.rx-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 16px 20px; margin-bottom: 12px; transition: var(--transition);
+}
+.rx-card:hover { border-color: var(--border-active); }
+.rx-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.rx-file { font-weight: 600; font-size: 0.92rem; }
+.rx-date { font-size: 0.78rem; color: var(--text-muted); }
+.rx-meds { font-size: 0.88rem; color: var(--accent-light); margin-bottom: 4px; }
+.rx-count { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ===== Form Elements ===== */
+.form-label {
+    display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+}
+.form-input {
+    width: 100%; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary); font-family: var(--font);
+    font-size: 0.92rem; transition: var(--transition); outline: none;
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.form-input::placeholder { color: var(--text-muted); }
+select.form-input { appearance: none; cursor: pointer; }
+
+/* ===== Reminder Table ===== */
+.rem-table {
+    width: 100%; border-collapse: collapse; font-size: 0.85rem;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+    overflow: hidden;
+}
+.rem-table th {
+    text-align: left; padding: 10px 12px; font-size: 0.72rem; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.rem-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    color: var(--text-secondary); vertical-align: middle;
+}
+.rem-table tr:last-child td { border-bottom: none; }
+
+/* ===== Badges ===== */
+.badge-active { color: var(--success); font-weight: 600; font-size: 0.8rem; }
+.badge-paused { color: var(--warning); font-weight: 600; font-size: 0.8rem; }
+.badge-failed { color: var(--error); font-weight: 600; font-size: 0.8rem; }
+
+/* ===== Small Buttons ===== */
+.btn-sm {
+    padding: 4px 10px; border-radius: var(--radius-sm); font-family: var(--font);
+    font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: var(--transition);
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary);
+    margin-right: 4px;
+}
+.btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm.btn-danger:hover { border-color: var(--error); color: var(--error); }
+
+/* ===== Import Checkbox ===== */
+.import-med {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: 8px; cursor: pointer; transition: var(--transition);
+    font-size: 0.88rem; color: var(--text-secondary);
+}
+.import-med:hover { border-color: var(--border-active); }
+.import-med input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
+
+/* ===== Empty State ===== */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.loading-text { color: var(--text-muted); font-size: 0.9rem; }
+
+/* ===== TTS Button ===== */
+.btn-read-aloud {
+    margin-left: auto; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-secondary); padding: 6px 12px; border-radius: 20px;
+    font-family: var(--font); font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    transition: var(--transition); white-space: nowrap;
+}
+.btn-read-aloud:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ===== Responsive Additions ===== */
+@media (max-width: 640px) {
+    .dash-actions { grid-template-columns: 1fr; }
+    .rem-table { font-size: 0.78rem; }
+    .rem-table th, .rem-table td { padding: 8px; }
+    .dash-nav { flex-wrap: wrap; gap: 10px; }
+}
+
