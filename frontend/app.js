@@ -1,335 +1,230 @@
-/**
- * MediScan — Frontend Application Logic
- * Handles file upload, drag-drop, API calls, and pipeline results rendering.
- */
-
-const API_BASE = 'http://localhost:5000';
-
-// DOM Elements
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-const filePreview = document.getElementById('file-preview');
-const fileName = document.getElementById('file-name');
-const fileSize = document.getElementById('file-size');
-const previewImage = document.getElementById('preview-image');
-const previewContainer = document.querySelector('.preview-image-container');
-const actionButtons = document.getElementById('action-buttons');
-const btnUpload = document.getElementById('btn-upload');
-const btnUploadOnly = document.getElementById('btn-upload-only');
-const btnRemove = document.getElementById('btn-remove');
-const btnScanAgain = document.getElementById('btn-scan-again');
+/* MediScan — app.js */
 
 const uploadSection = document.getElementById('upload-section');
 const progressSection = document.getElementById('progress-section');
 const resultsSection = document.getElementById('results-section');
+
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const uploadTrigger = document.getElementById('upload-trigger');
+const filePreview = document.getElementById('file-preview');
+const previewImage = document.getElementById('preview-image');
+const fileNameEl = document.getElementById('file-name');
+const fileSizeEl = document.getElementById('file-size');
+const btnRemove = document.getElementById('btn-remove');
+const actionButtons = document.getElementById('action-buttons');
+const btnUpload = document.getElementById('btn-upload');
+const btnUploadOnly = document.getElementById('btn-upload-only');
+const btnScanAgain = document.getElementById('btn-scan-again');
+
 const progressTitle = document.getElementById('progress-title');
-const progressSubtitle = document.getElementById('progress-subtitle');
+const progressBar = document.getElementById('progress-bar');
+const stepEls = {
+    upload: document.getElementById('step-upload'),
+    ocr: document.getElementById('step-ocr'),
+    cleanup: document.getElementById('step-cleanup'),
+    explain: document.getElementById('step-explain'),
+};
 
 const pipelineSteps = document.getElementById('pipeline-steps');
 const rawOcrCard = document.getElementById('raw-ocr-card');
 const rawOcrText = document.getElementById('raw-ocr-text');
-const cleanedTextCard = document.getElementById('cleaned-text-card');
-const cleanedText = document.getElementById('cleaned-text');
 const resultFilename = document.getElementById('result-filename');
-const medicinesContainer = document.getElementById('medicines-container');
+const cleanedCard = document.getElementById('cleaned-text-card');
+const cleanedText = document.getElementById('cleaned-text');
+const medContainer = document.getElementById('medicines-container');
 const errorCard = document.getElementById('error-card');
 const errorTitle = document.getElementById('error-title');
-const errorMessage = document.getElementById('error-message');
+const errorMsg = document.getElementById('error-message');
 
 let selectedFile = null;
 
-// ===== File Selection =====
-
-function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+/* ── Sections ── */
+function show(id) {
+    [uploadSection, progressSection, resultsSection].forEach(s => {
+        if (s) s.style.display = s.id === id ? 'block' : 'none';
+    });
 }
+show('upload-section');
 
-function handleFileSelect(file) {
+/* ── File handling ── */
+function handleFile(file) {
     if (!file) return;
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp', 'application/pdf'];
-    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|bmp|tiff|webp|pdf)$/i)) {
-        alert('Unsupported file type. Please upload JPG, PNG, PDF, WEBP, or TIFF.');
-        return;
+    const valid = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp', 'application/pdf'];
+    if (!valid.includes(file.type) && !file.name.match(/\.(pdf|jpg|jpeg|png|bmp|tiff|webp)$/i)) {
+        return alert('Unsupported file type.');
     }
-
-    if (file.size > 10 * 1024 * 1024) {
-        alert('File too large. Maximum size is 10 MB.');
-        return;
-    }
-
+    if (file.size > 10 * 1024 * 1024) return alert('File exceeds 10 MB.');
     selectedFile = file;
-    fileName.textContent = file.name;
-    fileSize.textContent = formatBytes(file.size);
-
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewImage.src = e.target.result;
-            previewContainer.style.display = 'flex';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        previewContainer.style.display = 'none';
-    }
-
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = fmtSize(file.size);
     dropZone.style.display = 'none';
     filePreview.style.display = 'block';
     actionButtons.style.display = 'flex';
+    if (file.type.startsWith('image/')) {
+        const r = new FileReader();
+        r.onload = e => { previewImage.src = e.target.result; previewImage.style.display = 'block'; };
+        r.readAsDataURL(file);
+    } else {
+        previewImage.style.display = 'none';
+    }
 }
 
-function clearFile() {
-    selectedFile = null;
-    fileInput.value = '';
-    dropZone.style.display = 'block';
-    filePreview.style.display = 'none';
-    actionButtons.style.display = 'none';
-    previewImage.src = '';
+function fmtSize(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
 }
 
-// ===== Drag & Drop =====
-
-dropZone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
-
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    handleFileSelect(e.dataTransfer.files[0]);
+uploadTrigger && uploadTrigger.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+dropZone.addEventListener('click', () => { if (!selectedFile) fileInput.click(); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 });
 
-btnRemove.addEventListener('click', clearFile);
-
-// ===== Section Transitions =====
-
-function showSection(section) {
-    uploadSection.style.display = 'none';
-    progressSection.style.display = 'none';
-    resultsSection.style.display = 'none';
-    section.style.display = 'block';
+function resetUpload() {
+    selectedFile = null; fileInput.value = ''; previewImage.src = '';
+    dropZone.style.display = 'block'; filePreview.style.display = 'none'; actionButtons.style.display = 'none';
 }
+btnRemove && btnRemove.addEventListener('click', resetUpload);
 
-function setProgress(step, title, subtitle) {
-    const steps = ['upload', 'ocr', 'cleanup', 'explain'];
-    steps.forEach((s, i) => {
-        const el = document.getElementById('step-' + s);
+btnScanAgain && btnScanAgain.addEventListener('click', () => {
+    resetUpload(); show('upload-section');
+    medContainer.innerHTML = '';
+    rawOcrCard.style.display = 'none'; cleanedCard.style.display = 'none'; errorCard.style.display = 'none';
+    pipelineSteps.innerHTML = '';
+    Object.values(stepEls).forEach(el => el && el.classList.remove('active', 'done'));
+});
+
+/* ── Step UI ── */
+function setStep(key) {
+    Object.entries(stepEls).forEach(([k, el]) => {
         if (!el) return;
         el.classList.remove('active', 'done');
-        if (i < steps.indexOf(step)) el.classList.add('done');
-        if (s === step) el.classList.add('active');
+        if (k === key) el.classList.add('active');
     });
-    if (title) progressTitle.textContent = title;
-    if (subtitle) progressSubtitle.textContent = subtitle;
+}
+function doneStep(key) {
+    if (stepEls[key]) { stepEls[key].classList.remove('active'); stepEls[key].classList.add('done'); }
+}
+function setProgress(pct) { if (progressBar) progressBar.style.width = pct + '%'; }
+
+function setPipeline(steps) {
+    if (!pipelineSteps) return;
+    pipelineSteps.innerHTML = '';
+    steps.forEach(s => {
+        const b = document.createElement('span');
+        b.className = 'rbadge rbadge-' + (s.status === 'success' ? 'success' : s.status === 'failed' ? 'error' : 'pending');
+        b.textContent = s.label;
+        pipelineSteps.appendChild(b);
+    });
 }
 
-// ===== API Calls =====
-
-async function uploadFile(endpoint) {
+/* ── Upload Only ── */
+btnUploadOnly && btnUploadOnly.addEventListener('click', async () => {
     if (!selectedFile) return;
-
-    showSection(progressSection);
-    setProgress('upload', 'Uploading prescription...', 'Sending file to server');
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
+    show('progress-section'); setStep('upload'); setProgress(10);
+    progressTitle.textContent = 'Uploading…';
     try {
-        await sleep(400);
-        setProgress('ocr', 'Running OCR...', 'Tesseract multi-pass extraction (15 attempts)');
-
-        const res = await fetch(`${API_BASE}${endpoint}`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
-            throw new Error(err.detail || `Server error: ${res.status}`);
-        }
-
+        const fd = new FormData(); fd.append('file', selectedFile);
+        const res = await fetch('/upload', { method: 'POST', body: fd });
         const data = await res.json();
-
-        if (endpoint === '/scan') {
-            setProgress('cleanup', 'LLM cleaning OCR text...', 'Fixing broken handwriting via OpenRouter');
-            await sleep(300);
-            setProgress('explain', 'Extracting medicines...', 'AI analyzing prescription');
-            await sleep(300);
-        }
-
-        showResults(data, endpoint);
-    } catch (err) {
-        showSection(resultsSection);
-        rawOcrCard.style.display = 'none';
-        cleanedTextCard.style.display = 'none';
-        medicinesContainer.innerHTML = '';
-        pipelineSteps.innerHTML = '';
-        showError('Upload Failed', err.message);
-    }
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ===== Display Results =====
-
-function showResults(data, endpoint) {
-    showSection(resultsSection);
-    errorCard.style.display = 'none';
-    rawOcrCard.style.display = 'none';
-    cleanedTextCard.style.display = 'none';
-    medicinesContainer.innerHTML = '';
-    pipelineSteps.innerHTML = '';
-
-    // Pipeline status badges
-    if (data.pipeline) {
-        renderPipeline(data.pipeline);
-    }
-
-    // Filename
-    resultFilename.textContent = data.filename || selectedFile?.name || '';
-
-    // Raw OCR text
-    const rawText = data.raw_ocr || data.ocr_text || '';
-    if (rawText) {
-        rawOcrCard.style.display = 'block';
-        rawOcrText.textContent = rawText;
-    }
-
-    // Cleaned text (from LLM)
-    if (data.cleaned_text) {
-        cleanedTextCard.style.display = 'block';
-        cleanedText.textContent = data.cleaned_text;
-    }
-
-    // Error
-    if (data.error) {
-        showError(
-            data.status === 'partial' ? 'Partial Results' : 'Warning',
-            data.error
-        );
-    }
-
-    // Medicine cards
-    if (data.medicines && Array.isArray(data.medicines)) {
-        renderMedicines(data.medicines);
-    }
-
-    // Upload-only: no OCR, no medicines
-    if (!rawText && !data.cleaned_text && !data.medicines) {
-        rawOcrCard.style.display = 'block';
-        rawOcrText.textContent = `✅ File uploaded successfully!\n\nFilename: ${data.filename}\nSize: ${formatBytes(data.size_bytes)}\nType: ${data.content_type}`;
-    }
-}
-
-function renderPipeline(pipeline) {
-    const steps = [
-        { key: 'upload', label: '📤 Upload', icon: '📤' },
-        { key: 'ocr', label: '🔍 OCR', icon: '🔍' },
-        { key: 'llm_cleanup', label: '🧹 LLM Cleanup', icon: '🧹' },
-        { key: 'llm_explain', label: '💊 Medicine Extract', icon: '💊' },
-    ];
-
-    pipelineSteps.innerHTML = '';
-
-    steps.forEach((step, i) => {
-        const status = pipeline[step.key] || 'pending';
-        const statusClass = status === 'success' ? 'success' : (status.startsWith('failed') ? 'failed' : 'pending');
-        const statusIcon = status === 'success' ? '✓' : (status.startsWith('failed') ? '✗' : '⏳');
-
-        const el = document.createElement('span');
-        el.className = `pipeline-step ${statusClass}`;
-        el.textContent = `${statusIcon} ${step.label}`;
-        pipelineSteps.appendChild(el);
-
-        if (i < steps.length - 1) {
-            const arrow = document.createElement('span');
-            arrow.className = 'pipeline-arrow';
-            arrow.textContent = '→';
-            pipelineSteps.appendChild(arrow);
-        }
-    });
-}
-
-function renderMedicines(medicines) {
-    if (!medicines || medicines.length === 0) return;
-
-    medicines.forEach((med, i) => {
-        const card = document.createElement('div');
-        card.className = 'medicine-card';
-        card.style.animationDelay = `${i * 0.1}s`;
-
-        let sideEffectsHtml = '';
-        if (med.side_effects && med.side_effects.length > 0) {
-            sideEffectsHtml = `
-                <div class="med-field">
-                    <div class="med-label">Side Effects</div>
-                    <div class="med-tags">
-                        ${med.side_effects.map(se => `<span class="med-tag">${esc(se)}</span>`).join('')}
-                    </div>
-                </div>`;
-        }
-
-        let warningsHtml = '';
-        if (med.warnings && med.warnings.length > 0) {
-            warningsHtml = `
-                <div class="med-field">
-                    <div class="med-label">Warnings</div>
-                    <div class="med-tags">
-                        ${med.warnings.map(w => `<span class="med-tag warning">${esc(w)}</span>`).join('')}
-                    </div>
-                </div>`;
-        }
-
-        let plainEnglish = '';
-        if (med.plain_english) {
-            plainEnglish = `<div class="plain-english">💡 ${esc(med.plain_english)}</div>`;
-        }
-
-        card.innerHTML = `
-            <div class="medicine-card-header">
-                <div class="med-icon">💊</div>
-                <div>
-                    <div class="med-name">${esc(med.name || 'Unknown Medicine')}</div>
-                    <div class="med-dosage">${esc(med.dosage || '')} ${med.frequency ? '• ' + esc(med.frequency) : ''}</div>
-                </div>
-            </div>
-            <div class="medicine-card-body">
-                ${med.purpose ? `<div class="med-field"><div class="med-label">Purpose</div><div class="med-value">${esc(med.purpose)}</div></div>` : ''}
-                ${sideEffectsHtml}
-                ${warningsHtml}
-            </div>
-            ${plainEnglish}
-        `;
-        medicinesContainer.appendChild(card);
-    });
-}
-
-function showError(title, message) {
-    errorCard.style.display = 'block';
-    errorTitle.textContent = '⚠️ ' + title;
-    errorMessage.textContent = message;
-}
-
-function esc(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// ===== Button Handlers =====
-
-btnUpload.addEventListener('click', () => uploadFile('/scan'));
-btnUploadOnly.addEventListener('click', () => uploadFile('/upload'));
-
-btnScanAgain.addEventListener('click', () => {
-    clearFile();
-    showSection(uploadSection);
-    errorCard.style.display = 'none';
+        doneStep('upload'); setProgress(100);
+        show('results-section');
+        setPipeline([{ label: 'Uploaded', status: 'success' }]);
+        if (data.filename && resultFilename) resultFilename.textContent = data.filename;
+        rawOcrCard.style.display = 'none'; cleanedCard.style.display = 'none';
+        errorCard.style.display = 'none'; medContainer.innerHTML = '';
+    } catch (err) { show('results-section'); showErr('Upload Failed', err.message); }
 });
 
-console.log('🏥 MediScan frontend loaded');
+/* ── Scan ── */
+btnUpload && btnUpload.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    show('progress-section'); setProgress(5);
+    try {
+        progressTitle.textContent = 'Uploading file…'; setStep('upload');
+        const fd = new FormData(); fd.append('file', selectedFile);
+        const upRes = await fetch('/upload', { method: 'POST', body: fd });
+        if (!upRes.ok) throw new Error('Upload failed: ' + upRes.statusText);
+        const upData = await upRes.json();
+        doneStep('upload'); setProgress(22);
+
+        progressTitle.textContent = 'Running OCR…'; setStep('ocr'); setProgress(38);
+        const ocrRes = await fetch('/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: upData.filename }) });
+        if (!ocrRes.ok) throw new Error('OCR failed: ' + ocrRes.statusText);
+        const ocrData = await ocrRes.json();
+        doneStep('ocr'); setProgress(56);
+
+        progressTitle.textContent = 'Cleaning with AI…'; setStep('cleanup'); setProgress(66);
+        const clRes = await fetch('/cleanup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: ocrData.text }) });
+        const clData = clRes.ok ? await clRes.json() : { cleaned: null };
+        doneStep('cleanup'); setProgress(80);
+
+        progressTitle.textContent = 'Generating explanation…'; setStep('explain');
+        const exRes = await fetch('/explain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: clData.cleaned || ocrData.text }) });
+        const exData = exRes.ok ? await exRes.json() : { medicines: [] };
+        doneStep('explain'); setProgress(100);
+
+        show('results-section');
+        setPipeline([
+            { label: 'Upload', status: 'success' },
+            { label: 'OCR', status: ocrData.text ? 'success' : 'failed' },
+            { label: 'LLM Cleanup', status: clData.cleaned ? 'success' : 'pending' },
+            { label: 'Explain', status: exData.medicines?.length ? 'success' : 'pending' },
+        ]);
+        if (ocrData.text) {
+            rawOcrCard.style.display = 'block'; rawOcrText.textContent = ocrData.text;
+            if (resultFilename) resultFilename.textContent = upData.filename || 'Tesseract';
+        }
+        if (clData.cleaned) { cleanedCard.style.display = 'block'; cleanedText.textContent = clData.cleaned; }
+        if (exData.medicines?.length) renderMeds(exData.medicines);
+
+    } catch (err) { show('results-section'); showErr('Processing Error', err.message); }
+});
+
+/* ── Medicine cards ── */
+function renderMeds(meds) {
+    medContainer.innerHTML = '';
+    meds.forEach((m, i) => {
+        const card = document.createElement('div');
+        card.className = 'med-card';
+        card.style.animationDelay = (i * 0.08) + 's';
+
+        const sideEffects = (m.side_effects || []).map(s => `<span class="med-tag">${s}</span>`).join('');
+        const warnings = (m.warnings || []).map(w => `<span class="med-tag w">${w}</span>`).join('');
+
+        card.innerHTML = `
+      <div class="med-card-head">
+        <div class="med-num-badge">${String(i + 1).padStart(2, '0')}</div>
+        <div class="med-head-text">
+          <div class="med-name">${m.name || 'Unknown Medicine'}</div>
+          ${m.dosage ? `<div class="med-dosage">${m.dosage}</div>` : ''}
+        </div>
+      </div>
+      <div class="med-card-body">
+        <div class="med-grid">
+          ${m.frequency ? `<div class="med-field"><span class="med-lbl">Frequency</span><div class="med-val">${m.frequency}</div></div>` : ''}
+          ${m.duration ? `<div class="med-field"><span class="med-lbl">Duration</span><div class="med-val">${m.duration}</div></div>` : ''}
+          ${m.purpose ? `<div class="med-field"><span class="med-lbl">Purpose</span><div class="med-val">${m.purpose}</div></div>` : ''}
+          ${m.category ? `<div class="med-field"><span class="med-lbl">Category</span><div class="med-val">${m.category}</div></div>` : ''}
+        </div>
+        ${sideEffects ? `<div class="med-field" style="margin-bottom:10px"><span class="med-lbl">Side Effects</span><div class="med-tags">${sideEffects}</div></div>` : ''}
+        ${warnings ? `<div class="med-field"><span class="med-lbl">Warnings</span><div class="med-tags">${warnings}</div></div>` : ''}
+      </div>
+      ${m.plain_english ? `<div class="plain-english">${m.plain_english}</div>` : ''}
+    `;
+        medContainer.appendChild(card);
+    });
+}
+
+function showErr(title, msg) {
+    errorCard.style.display = 'flex';
+    errorTitle.textContent = title;
+    errorMsg.textContent = msg;
+    rawOcrCard.style.display = 'none'; cleanedCard.style.display = 'none'; medContainer.innerHTML = '';
+}

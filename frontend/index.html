@@ -1,130 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MediScan — AI-powered prescription scanner">
     <title>MediScan — Prescription Scanner</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <script>window.onerror=function(m,s,l,c,e){alert('JS Error: '+m+' at line '+l);console.error(e);}</script>
-    <div class="bg-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
 
-    <div class="app-container">
-        <header class="app-header">
-            <div class="logo-section">
-                <div class="logo-icon">💊</div>
-                <h1 class="logo-text">MediScan</h1>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <div class="header-inner">
+                <div class="logo">
+                    <div class="logo-mark">Rx</div>
+                    <span class="logo-name">MediScan</span>
+                </div>
+                <nav class="nav">
+                    <a href="#" class="nav-link active">Scanner</a>
+                    <a href="#" class="nav-link">History</a>
+                    <a href="#" class="nav-link">Medicines</a>
+                </nav>
+                <span class="ai-badge">AI-Powered</span>
             </div>
-            <p class="tagline">Upload your prescription • Get instant clarity</p>
         </header>
 
-        <main class="main-content">
-            <!-- Upload Section -->
-            <section class="upload-section" id="upload-section">
+        <!-- UPLOAD -->
+        <section class="hero" id="upload-section">
+            <div class="hero-copy">
+                <div class="eyebrow"><span class="pulse-dot"></span>Prescription Analysis</div>
+                <h1 class="hero-title">
+                    Decode every<br>
+                    <em>medicine</em><br>
+                    instantly.
+                </h1>
+                <p class="hero-sub">Upload any prescription — handwritten or printed. Our 4-step AI pipeline reads,
+                    cleans, and explains it in plain language.</p>
+                <div class="stats-row">
+                    <div class="stat"><span class="stat-n">99%</span><span class="stat-l">OCR accuracy</span></div>
+                    <div class="stat-sep"></div>
+                    <div class="stat"><span class="stat-n">&lt;10s</span><span class="stat-l">scan time</span></div>
+                    <div class="stat-sep"></div>
+                    <div class="stat"><span class="stat-n">4-step</span><span class="stat-l">AI pipeline</span></div>
+                </div>
+            </div>
+
+            <div class="upload-side">
                 <div class="upload-card" id="upload-card">
                     <div class="drop-zone" id="drop-zone">
-                        <div class="drop-zone-content">
-                            <div class="upload-icon">📤</div>
-                            <h2 class="drop-title">Drop your prescription here</h2>
-                            <p class="drop-subtitle">or click to browse files</p>
-                            <div class="file-types">
-                                <span class="file-badge">JPG</span>
-                                <span class="file-badge">PNG</span>
-                                <span class="file-badge">PDF</span>
-                                <span class="file-badge">WEBP</span>
-                            </div>
-                            <p class="size-limit">Maximum file size: 10 MB</p>
-                        </div>
                         <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.bmp,.tiff,.webp,.pdf" hidden>
+                        <div class="drop-visual">
+                            <div class="rings"><span class="r r1"></span><span class="r r2"></span><span
+                                    class="r r3"></span></div>
+                            <div class="up-icon">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="drop-title">Drop your prescription here</p>
+                        <p class="drop-sub">or <span class="drop-link" id="upload-trigger">browse files</span></p>
+                        <div class="fmt-row">
+                            <span class="fmt">JPG</span><span class="fmt">PNG</span><span class="fmt">PDF</span><span
+                                class="fmt">WEBP</span>
+                        </div>
+                        <p class="size-note">Maximum 10 MB</p>
                     </div>
 
-                    <div class="file-preview" id="file-preview" style="display:none;">
-                        <div class="preview-header">
-                            <div class="preview-info">
-                                <span>📄</span>
+                    <div class="preview-zone" id="file-preview" style="display:none;">
+                        <div class="preview-bar">
+                            <div class="pv-info">
+                                <div class="pv-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round">
+                                        <path
+                                            d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                    </svg>
+                                </div>
                                 <div>
-                                    <p class="file-name" id="file-name"></p>
-                                    <p class="file-size" id="file-size"></p>
+                                    <p class="pv-name" id="file-name"></p>
+                                    <p class="pv-size" id="file-size"></p>
                                 </div>
                             </div>
-                            <button class="btn-remove" id="btn-remove" title="Remove file">✕</button>
+                            <button class="pv-remove" id="btn-remove" title="Remove">✕</button>
                         </div>
-                        <div class="preview-image-container">
-                            <img id="preview-image" alt="Preview">
-                        </div>
+                        <div class="pv-img-wrap"><img id="preview-image" alt="Preview"></div>
                     </div>
 
-                    <div class="action-buttons" id="action-buttons" style="display:none;">
-                        <button class="btn btn-primary" id="btn-upload">🔍 Upload & Scan</button>
-                        <button class="btn btn-secondary" id="btn-upload-only">📁 Upload Only</button>
+                    <div class="action-row" id="action-buttons" style="display:none;">
+                        <button class="btn-scan" id="btn-upload">
+                            <span class="btn-glow"></span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            Scan Prescription
+                        </button>
+                        <button class="btn-soft" id="btn-upload-only">Upload Only</button>
                     </div>
                 </div>
-            </section>
 
-            <!-- Progress -->
-            <section class="progress-section" id="progress-section" style="display:none;">
-                <div class="progress-card">
-                    <div class="spinner"></div>
-                    <h3 id="progress-title">Processing...</h3>
-                    <p id="progress-subtitle">This may take a few seconds</p>
-                    <div class="progress-steps">
-                        <div class="step" id="step-upload"><div class="step-dot"></div><span>Upload</span></div>
-                        <div class="step" id="step-ocr"><div class="step-dot"></div><span>OCR</span></div>
-                        <div class="step" id="step-cleanup"><div class="step-dot"></div><span>LLM Cleanup</span></div>
-                        <div class="step" id="step-explain"><div class="step-dot"></div><span>Explain</span></div>
+                <div class="chips">
+                    <div class="chip">🔒 HIPAA Safe</div>
+                    <div class="chip">✦ AI Verified</div>
+                    <div class="chip">⚡ Real-time</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROGRESS -->
+        <section class="progress-wrap" id="progress-section" style="display:none;">
+            <div class="progress-inner">
+                <div class="scan-anim">
+                    <div class="scan-ring sa1"></div>
+                    <div class="scan-ring sa2"></div>
+                    <div class="scan-ring sa3"></div>
+                    <div class="scan-core">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round">
+                            <path d="M9 3H5a2 2 0 0 0-2 2v4" />
+                            <path d="M21 3h-4" />
+                            <path d="M21 21h-4" />
+                            <path d="M3 21h4" />
+                            <path d="M9 21H5a2 2 0 0 1-2-2v-4" />
+                            <path d="M15 3h4a2 2 0 0 1 2 2v4" />
+                            <path d="M15 21h4a2 2 0 0 0 2-2v-4" />
+                            <line x1="12" y1="8" x2="12" y2="16" />
+                            <line x1="8" y1="12" x2="16" y2="12" />
+                        </svg>
                     </div>
                 </div>
-            </section>
-
-            <!-- Results -->
-            <section class="results-section" id="results-section" style="display:none;">
-                <!-- Pipeline Status -->
-                <div class="pipeline-status" id="pipeline-status">
-                    <h3>🔗 Pipeline Status</h3>
-                    <div class="pipeline-steps" id="pipeline-steps"></div>
+                <p class="prog-eyebrow">Processing</p>
+                <h2 class="prog-title" id="progress-title">Analysing prescription…</h2>
+                <div class="steps-grid">
+                    <div class="step-tile" id="step-upload"><span class="step-num">01</span><span
+                            class="step-n">Upload</span><span class="step-d">Sending file</span></div>
+                    <div class="step-tile" id="step-ocr"><span class="step-num">02</span><span
+                            class="step-n">OCR</span><span class="step-d">Tesseract</span></div>
+                    <div class="step-tile" id="step-cleanup"><span class="step-num">03</span><span
+                            class="step-n">Cleanup</span><span class="step-d">AI correction</span></div>
+                    <div class="step-tile" id="step-explain"><span class="step-num">04</span><span
+                            class="step-n">Explain</span><span class="step-d">Plain language</span></div>
                 </div>
+                <div class="prog-track">
+                    <div class="prog-fill" id="progress-bar"></div>
+                </div>
+            </div>
+        </section>
 
-                <!-- Raw OCR Text -->
-                <div class="result-card" id="raw-ocr-card" style="display:none;">
-                    <div class="result-header">
-                        <h3>🔍 Raw OCR Output</h3>
-                        <span class="result-subtitle" id="result-filename"></span>
-                        <span class="pipeline-badge badge-raw">Tesseract Multi-Pass</span>
+        <!-- RESULTS -->
+        <section class="results" id="results-section" style="display:none;">
+            <div class="results-top">
+                <div class="eyebrow"><span class="pulse-dot"></span>Results</div>
+                <h2 class="results-title">Prescription Decoded</h2>
+                <div class="res-badges" id="pipeline-steps"></div>
+            </div>
+
+            <div class="text-panel" id="raw-ocr-card" style="display:none;">
+                <div class="tp-head">
+                    <div class="tp-icon amber-icon">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
                     </div>
-                    <pre class="ocr-text" id="raw-ocr-text"></pre>
+                    <span class="tp-label">Raw OCR Output</span>
+                    <span class="tp-tag amber-tag" id="result-filename">Tesseract</span>
                 </div>
+                <pre class="tp-text mono" id="raw-ocr-text"></pre>
+            </div>
 
-                <!-- Cleaned Text -->
-                <div class="result-card" id="cleaned-text-card" style="display:none;">
-                    <div class="result-header">
-                        <h3>✨ LLM-Cleaned Text</h3>
-                        <span class="pipeline-badge badge-cleaned">OpenRouter</span>
+            <div class="text-panel" id="cleaned-text-card" style="display:none;">
+                <div class="tp-head">
+                    <div class="tp-icon teal-icon">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                        </svg>
                     </div>
-                    <pre class="ocr-text cleaned" id="cleaned-text"></pre>
+                    <span class="tp-label">LLM-Cleaned Text</span>
+                    <span class="tp-tag teal-tag">OpenRouter</span>
                 </div>
+                <pre class="tp-text" id="cleaned-text"></pre>
+            </div>
 
-                <!-- Medicine Cards -->
-                <div id="medicines-container"></div>
-                <div class="error-card" id="error-card" style="display:none;">
-                    <p class="error-title" id="error-title">⚠️ Error</p>
-                    <p id="error-message"></p>
+            <div id="medicines-container"></div>
+
+            <div class="error-panel" id="error-card" style="display:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <div>
+                    <p class="err-title" id="error-title">Error</p>
+                    <p class="err-body" id="error-message"></p>
                 </div>
-                <button class="btn btn-outline" id="btn-scan-again">🔄 Scan Another Prescription</button>
-            </section>
-        </main>
+            </div>
 
-        <footer class="app-footer">
-            <p>MediScan — Built for understanding your prescriptions</p>
-            <p class="disclaimer">⚠️ Not a substitute for professional medical advice</p>
+            <button class="btn-rescan" id="btn-scan-again">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+                Scan Another Prescription
+            </button>
+        </section>
+
+        <footer class="footer">
+            <span class="footer-brand">MediScan</span>
+            <span class="footer-sep">·</span>
+            <span>Built for clarity, not complexity</span>
+            <span class="footer-sep">·</span>
+            <span class="footer-warn">⚠ Not a substitute for medical advice</span>
         </footer>
+
     </div>
-    <script src="app.js?v=2"></script>
+
+    <script src="app.js"></script>
+    <script src="canvas.js"></script>
 </body>
+
 </html>
