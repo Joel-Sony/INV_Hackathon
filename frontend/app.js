@@ -1,41 +1,42 @@
 /* MediScan — app.js (merged: new UI + full backend) */
 
-const uploadSection  = document.getElementById('upload-section');
+const uploadSection = document.getElementById('upload-section');
 const progressSection = document.getElementById('progress-section');
-const resultsSection  = document.getElementById('results-section');
+const resultsSection = document.getElementById('results-section');
 
-const dropZone      = document.getElementById('drop-zone');
-const fileInput     = document.getElementById('file-input');
+const API_BASE = 'http://localhost:5000';
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
 const uploadTrigger = document.getElementById('upload-trigger');
-const filePreview   = document.getElementById('file-preview');
-const previewImage  = document.getElementById('preview-image');
-const fileNameEl    = document.getElementById('file-name');
-const fileSizeEl    = document.getElementById('file-size');
-const btnRemove     = document.getElementById('btn-remove');
+const filePreview = document.getElementById('file-preview');
+const previewImage = document.getElementById('preview-image');
+const fileNameEl = document.getElementById('file-name');
+const fileSizeEl = document.getElementById('file-size');
+const btnRemove = document.getElementById('btn-remove');
 const actionButtons = document.getElementById('action-buttons');
-const btnUpload     = document.getElementById('btn-upload');
+const btnUpload = document.getElementById('btn-upload');
 const btnUploadOnly = document.getElementById('btn-upload-only');
-const btnScanAgain  = document.getElementById('btn-scan-again');
+const btnScanAgain = document.getElementById('btn-scan-again');
 
-const progressTitle  = document.getElementById('progress-title');
-const progressBar    = document.getElementById('progress-bar');
+const progressTitle = document.getElementById('progress-title');
+const progressBar = document.getElementById('progress-bar');
 const stepEls = {
-    upload:  document.getElementById('step-upload'),
-    ocr:     document.getElementById('step-ocr'),
+    upload: document.getElementById('step-upload'),
+    ocr: document.getElementById('step-ocr'),
     cleanup: document.getElementById('step-cleanup'),
     explain: document.getElementById('step-explain'),
 };
 
 const pipelineSteps = document.getElementById('pipeline-steps');
-const rawOcrCard    = document.getElementById('raw-ocr-card');
-const rawOcrText    = document.getElementById('raw-ocr-text');
+const rawOcrCard = document.getElementById('raw-ocr-card');
+const rawOcrText = document.getElementById('raw-ocr-text');
 const resultFilename = document.getElementById('result-filename');
-const cleanedCard   = document.getElementById('cleaned-text-card');
-const cleanedText   = document.getElementById('cleaned-text');
-const medContainer  = document.getElementById('medicines-container');
-const errorCard     = document.getElementById('error-card');
-const errorTitle    = document.getElementById('error-title');
-const errorMsg      = document.getElementById('error-message');
+const cleanedCard = document.getElementById('cleaned-text-card');
+const cleanedText = document.getElementById('cleaned-text');
+const medContainer = document.getElementById('medicines-container');
+const errorCard = document.getElementById('error-card');
+const errorTitle = document.getElementById('error-title');
+const errorMsg = document.getElementById('error-message');
 
 let selectedFile = null;
 
@@ -50,7 +51,7 @@ show('upload-section');
 /* ─── File handling ─── */
 function handleFile(file) {
     if (!file) return;
-    const valid = ['image/jpeg','image/png','image/bmp','image/tiff','image/webp','application/pdf'];
+    const valid = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp', 'application/pdf'];
     if (!valid.includes(file.type) && !file.name.match(/\.(pdf|jpg|jpeg|png|bmp|tiff|webp)$/i)) {
         return alert('Unsupported file type.');
     }
@@ -99,14 +100,14 @@ btnScanAgain && btnScanAgain.addEventListener('click', () => {
     if (cleanedCard) cleanedCard.style.display = 'none';
     if (errorCard) errorCard.style.display = 'none';
     if (pipelineSteps) pipelineSteps.innerHTML = '';
-    Object.values(stepEls).forEach(el => el && el.classList.remove('active','done'));
+    Object.values(stepEls).forEach(el => el && el.classList.remove('active', 'done'));
 });
 
 /* ─── Step UI ─── */
 function setStep(key) {
     Object.entries(stepEls).forEach(([k, el]) => {
         if (!el) return;
-        el.classList.remove('active','done');
+        el.classList.remove('active', 'done');
         if (k === key) el.classList.add('active');
     });
 }
@@ -155,14 +156,14 @@ btnUpload && btnUpload.addEventListener('click', async () => {
     try {
         if (progressTitle) progressTitle.textContent = 'Uploading file…'; setStep('upload');
         const fd = new FormData(); fd.append('file', selectedFile);
-        const upRes = await fetch(API_BASE + '/upload', { method:'POST', headers, body: fd });
+        const upRes = await fetch(API_BASE + '/upload', { method: 'POST', headers, body: fd });
         if (!upRes.ok) throw new Error('Upload failed: ' + upRes.statusText);
         const upData = await upRes.json();
         doneStep('upload'); setProgress(22);
 
         if (progressTitle) progressTitle.textContent = 'Running OCR…'; setStep('ocr'); setProgress(38);
         const ocrRes = await fetch(API_BASE + '/ocr', {
-            method:'POST', headers:{ ...headers, 'Content-Type':'application/json' },
+            method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename: upData.filename })
         });
         if (!ocrRes.ok) throw new Error('OCR failed: ' + ocrRes.statusText);
@@ -171,7 +172,7 @@ btnUpload && btnUpload.addEventListener('click', async () => {
 
         if (progressTitle) progressTitle.textContent = 'Cleaning with AI…'; setStep('cleanup'); setProgress(66);
         const clRes = await fetch(API_BASE + '/cleanup', {
-            method:'POST', headers:{ ...headers, 'Content-Type':'application/json' },
+            method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: ocrData.text })
         });
         const clData = clRes.ok ? await clRes.json() : { cleaned: null };
@@ -179,7 +180,7 @@ btnUpload && btnUpload.addEventListener('click', async () => {
 
         if (progressTitle) progressTitle.textContent = 'Generating explanation…'; setStep('explain');
         const exRes = await fetch(API_BASE + '/explain', {
-            method:'POST', headers:{ ...headers, 'Content-Type':'application/json' },
+            method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: clData.cleaned || ocrData.text })
         });
         const exData = exRes.ok ? await exRes.json() : { medicines: [] };
@@ -187,10 +188,10 @@ btnUpload && btnUpload.addEventListener('click', async () => {
 
         show('results-section');
         setPipeline([
-            { label: 'Upload',      status: 'success' },
-            { label: 'OCR',         status: ocrData.text ? 'success' : 'failed' },
+            { label: 'Upload', status: 'success' },
+            { label: 'OCR', status: ocrData.text ? 'success' : 'failed' },
             { label: 'LLM Cleanup', status: clData.cleaned ? 'success' : 'pending' },
-            { label: 'Explain',     status: exData.medicines?.length ? 'success' : 'pending' },
+            { label: 'Explain', status: exData.medicines?.length ? 'success' : 'pending' },
         ]);
         if (ocrData.text && rawOcrCard) {
             rawOcrCard.style.display = 'block';
@@ -209,7 +210,7 @@ btnUpload && btnUpload.addEventListener('click', async () => {
 /* ─── Medicine cards ─── */
 function esc(s) {
     if (!s) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function renderMeds(meds) {
@@ -221,11 +222,11 @@ function renderMeds(meds) {
         card.style.animationDelay = (i * 0.08) + 's';
 
         const sideEffects = (m.side_effects || []).map(s => `<span class="med-tag">${esc(s)}</span>`).join('');
-        const warnings    = (m.warnings    || []).map(w => `<span class="med-tag w">${esc(w)}</span>`).join('');
+        const warnings = (m.warnings || []).map(w => `<span class="med-tag w">${esc(w)}</span>`).join('');
 
         card.innerHTML = `
       <div class="med-card-head">
-        <div class="med-num-badge">${String(i+1).padStart(2,'0')}</div>
+        <div class="med-num-badge">${String(i + 1).padStart(2, '0')}</div>
         <div class="med-head-text">
           <div class="med-name">${esc(m.name || 'Unknown Medicine')}</div>
           ${m.dosage ? `<div class="med-dosage">${esc(m.dosage)}${m.frequency ? ' · ' + esc(m.frequency) : ''}</div>` : ''}
@@ -233,18 +234,18 @@ function renderMeds(meds) {
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
           <button class="btn-read-aloud" title="Read aloud">🔊 Listen</button>
           <button class="btn-soft" style="padding:6px 10px;font-size:12px;"
-            onclick="openReminderModal('${esc(m.name||'Medicine').replace(/'/g,"\\'")}')">🔔 Remind</button>
+            onclick="openReminderModal('${esc(m.name || 'Medicine').replace(/'/g, "\\'")}')">🔔 Remind</button>
         </div>
       </div>
       <div class="med-card-body">
         <div class="med-grid">
           ${m.frequency ? `<div class="med-field"><span class="med-lbl">Frequency</span><div class="med-val">${esc(m.frequency)}</div></div>` : ''}
-          ${m.duration  ? `<div class="med-field"><span class="med-lbl">Duration</span><div class="med-val">${esc(m.duration)}</div></div>` : ''}
-          ${m.purpose   ? `<div class="med-field"><span class="med-lbl">Purpose</span><div class="med-val">${esc(m.purpose)}</div></div>` : ''}
-          ${m.category  ? `<div class="med-field"><span class="med-lbl">Category</span><div class="med-val">${esc(m.category)}</div></div>` : ''}
+          ${m.duration ? `<div class="med-field"><span class="med-lbl">Duration</span><div class="med-val">${esc(m.duration)}</div></div>` : ''}
+          ${m.purpose ? `<div class="med-field"><span class="med-lbl">Purpose</span><div class="med-val">${esc(m.purpose)}</div></div>` : ''}
+          ${m.category ? `<div class="med-field"><span class="med-lbl">Category</span><div class="med-val">${esc(m.category)}</div></div>` : ''}
         </div>
         ${sideEffects ? `<div class="med-field" style="margin-bottom:10px"><span class="med-lbl">Side Effects</span><div class="med-tags">${sideEffects}</div></div>` : ''}
-        ${warnings    ? `<div class="med-field"><span class="med-lbl">Warnings</span><div class="med-tags">${warnings}</div></div>` : ''}
+        ${warnings ? `<div class="med-field"><span class="med-lbl">Warnings</span><div class="med-tags">${warnings}</div></div>` : ''}
       </div>
       ${m.plain_english ? `<div class="plain-english">${esc(m.plain_english)}</div>` : ''}
     `;
@@ -285,14 +286,14 @@ console.log('🏥 MediScan frontend loaded');
 // ===== REMINDERS FEATURE =====
 // ==========================================
 
-const reminderModal      = document.getElementById('reminder-modal');
-const btnCloseModal      = document.getElementById('btn-close-modal');
-const btnCancelReminder  = document.getElementById('btn-cancel-reminder');
-const btnSaveReminder    = document.getElementById('btn-save-reminder');
-const reminderMedNameEl  = document.getElementById('reminder-med-name');
-const reminderTimeInput  = document.getElementById('reminder-time');
-const btnViewReminders   = document.getElementById('btn-view-reminders');
-const remindersCountEl   = document.getElementById('reminders-count');
+const reminderModal = document.getElementById('reminder-modal');
+const btnCloseModal = document.getElementById('btn-close-modal');
+const btnCancelReminder = document.getElementById('btn-cancel-reminder');
+const btnSaveReminder = document.getElementById('btn-save-reminder');
+const reminderMedNameEl = document.getElementById('reminder-med-name');
+const reminderTimeInput = document.getElementById('reminder-time');
+const btnViewReminders = document.getElementById('btn-view-reminders');
+const remindersCountEl = document.getElementById('reminders-count');
 
 let currentReminderMed = '';
 let reminders = JSON.parse(localStorage.getItem('mediscan_reminders') || '[]');
@@ -309,7 +310,7 @@ function updateRemindersCount() {
 
 if ('Notification' in window) Notification.requestPermission();
 
-window.openReminderModal = function(medName) {
+window.openReminderModal = function (medName) {
     if (!reminderModal) return;
     currentReminderMed = medName;
     if (reminderMedNameEl) reminderMedNameEl.textContent = medName;
@@ -322,7 +323,7 @@ function closeReminderModal() {
     currentReminderMed = '';
 }
 
-btnCloseModal     && btnCloseModal.addEventListener('click', closeReminderModal);
+btnCloseModal && btnCloseModal.addEventListener('click', closeReminderModal);
 btnCancelReminder && btnCancelReminder.addEventListener('click', closeReminderModal);
 
 btnSaveReminder && btnSaveReminder.addEventListener('click', () => {
@@ -340,7 +341,7 @@ btnSaveReminder && btnSaveReminder.addEventListener('click', () => {
 btnViewReminders && btnViewReminders.addEventListener('click', () => {
     if (reminders.length === 0) { alert('No active reminders.'); return; }
     let msg = 'Active Reminders:\n\n';
-    reminders.forEach((r, i) => { msg += `${i+1}. ${r.medicine} at ${r.time}\n`; });
+    reminders.forEach((r, i) => { msg += `${i + 1}. ${r.medicine} at ${r.time}\n`; });
     msg += '\n(OK to clear all, Cancel to keep)';
     if (confirm(msg)) {
         reminders = [];
@@ -353,7 +354,7 @@ btnViewReminders && btnViewReminders.addEventListener('click', () => {
 setInterval(() => {
     if (reminders.length === 0) return;
     const now = new Date();
-    const cur = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const cur = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     if (localStorage.getItem('last_fired_time') === cur) return;
     let fired = false;
     reminders.forEach(r => {
@@ -376,15 +377,15 @@ updateRemindersCount();
 // ==========================================
 
 const btnFindPharmacies = document.getElementById('btn-find-pharmacies');
-const mapContainer      = document.getElementById('map-container');
-const mapStatus         = document.getElementById('map-status');
-const pharmacyMapEl     = document.getElementById('pharmacy-map');
+const mapContainer = document.getElementById('map-container');
+const mapStatus = document.getElementById('map-status');
+const pharmacyMapEl = document.getElementById('pharmacy-map');
 let leafletMap = null;
 
 if (btnFindPharmacies) {
     btnFindPharmacies.addEventListener('click', () => {
         if (mapContainer) mapContainer.style.display = 'block';
-        if (mapStatus)  { mapStatus.style.display = 'block'; mapStatus.textContent = 'Requesting your location…'; }
+        if (mapStatus) { mapStatus.style.display = 'block'; mapStatus.textContent = 'Requesting your location…'; }
         if (pharmacyMapEl) pharmacyMapEl.style.display = 'none';
 
         if (!navigator.geolocation) {
@@ -402,10 +403,10 @@ if (btnFindPharmacies) {
 async function loadPharmaciesMap(lat, lon) {
     try {
         const query = `[out:json];node(around:2000,${lat},${lon})[amenity=pharmacy];out;`;
-        const url   = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-        const data  = await (await fetch(url)).json();
+        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+        const data = await (await fetch(url)).json();
 
-        if (mapStatus)    mapStatus.style.display = 'none';
+        if (mapStatus) mapStatus.style.display = 'none';
         if (pharmacyMapEl) pharmacyMapEl.style.display = 'block';
 
         if (!leafletMap && typeof L !== 'undefined') {

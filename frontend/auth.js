@@ -1,7 +1,6 @@
 /**
  * MediScan — Auth helpers (shared across all pages)
  */
-
 const API_BASE = 'http://localhost:5000';
 
 function getToken() {
@@ -39,7 +38,7 @@ function requireAuth() {
 async function logout() {
     try {
         await fetch(API_BASE + '/auth/logout', { method: 'POST', headers: authHeaders() });
-    } catch (e) {}
+    } catch (e) { }
     clearAuth();
     window.location.href = 'login.html';
 }
