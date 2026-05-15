@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MediScan — AI-powered prescription scanner">
+    <title>MediScan — Prescription Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo-section">
+                <div class="logo-icon">💊</div>
+                <h1 class="logo-text">MediScan</h1>
+            </div>
+            <p class="tagline">Upload your prescription • Get instant clarity</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="upload-section" id="upload-section">
+                <div class="upload-card" id="upload-card">
+                    <div class="drop-zone" id="drop-zone">
+                        <div class="drop-zone-content">
+                            <div class="upload-icon">📤</div>
+                            <h2 class="drop-title">Drop your prescription here</h2>
+                            <p class="drop-subtitle">or click to browse files</p>
+                            <div class="file-types">
+                                <span class="file-badge">JPG</span>
+                                <span class="file-badge">PNG</span>
+                                <span class="file-badge">PDF</span>
+                                <span class="file-badge">WEBP</span>
+                            </div>
+                            <p class="size-limit">Maximum file size: 10 MB</p>
+                        </div>
+                        <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.bmp,.tiff,.webp,.pdf" hidden>
+                    </div>
+
+                    <div class="file-preview" id="file-preview" style="display:none;">
+                        <div class="preview-header">
+                            <div class="preview-info">
+                                <span>📄</span>
+                                <div>
+                                    <p class="file-name" id="file-name"></p>
+                                    <p class="file-size" id="file-size"></p>
+                                </div>
+                            </div>
+                            <button class="btn-remove" id="btn-remove" title="Remove file">✕</button>
+                        </div>
+                        <div class="preview-image-container">
+                            <img id="preview-image" alt="Preview">
+                        </div>
+                    </div>
+
+                    <div class="action-buttons" id="action-buttons" style="display:none;">
+                        <button class="btn btn-primary" id="btn-upload">🔍 Upload & Scan</button>
+                        <button class="btn btn-secondary" id="btn-upload-only">📁 Upload Only</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress -->
+            <section class="progress-section" id="progress-section" style="display:none;">
+                <div class="progress-card">
+                    <div class="spinner"></div>
+                    <h3 id="progress-title">Processing...</h3>
+                    <p id="progress-subtitle">This may take a few seconds</p>
+                    <div class="progress-steps">
+                        <div class="step" id="step-upload"><div class="step-dot"></div><span>Upload</span></div>
+                        <div class="step" id="step-ocr"><div class="step-dot"></div><span>OCR</span></div>
+                        <div class="step" id="step-ai"><div class="step-dot"></div><span>AI Analysis</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results -->
+            <section class="results-section" id="results-section" style="display:none;">
+                <div class="result-card" id="ocr-result-card">
+                    <div class="result-header">
+                        <h3>📝 Extracted Text</h3>
+                        <span class="result-subtitle" id="result-filename"></span>
+                    </div>
+                    <pre class="ocr-text" id="ocr-text"></pre>
+                </div>
+                <div id="medicines-container"></div>
+                <div class="error-card" id="error-card" style="display:none;">
+                    <p class="error-title" id="error-title">⚠️ Error</p>
+                    <p id="error-message"></p>
+                </div>
+                <button class="btn btn-outline" id="btn-scan-again">🔄 Scan Another Prescription</button>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>MediScan — Built for understanding your prescriptions</p>
+            <p class="disclaimer">⚠️ Not a substitute for professional medical advice</p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
