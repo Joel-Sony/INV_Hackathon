@@ -4,27 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediScan — Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Dashboard extras */
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--teal) 0%, var(--teal-l) 50%, #0891b2 100%);
+            border-radius: var(--r-xl); padding: 32px 36px;
+            margin-bottom: 28px; position: relative; overflow: hidden;
+            animation: fadeUp 0.6s var(--ease) both;
+            box-shadow: 0 8px 32px rgba(3,105,161,0.25);
+        }
+        .welcome-banner::before {
+            content: ''; position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .welcome-banner::after {
+            content: '🩺'; position: absolute; right: 32px; top: 50%;
+            transform: translateY(-50%); font-size: 72px; opacity: 0.12;
+            pointer-events: none;
+        }
+        .wb-eyebrow {
+            font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+            text-transform: uppercase; color: rgba(255,255,255,0.7);
+            margin-bottom: 8px;
+        }
+        .wb-name {
+            font-family: var(--serif); font-size: 2rem;
+            color: #fff; margin-bottom: 6px; position: relative; z-index: 1;
+        }
+        .wb-sub { font-size: 14px; color: rgba(255,255,255,0.72); position: relative; z-index: 1; }
+
+        /* Stagger action cards */
+        .action-card:nth-child(1) { animation-delay: 0.1s; }
+        .action-card:nth-child(2) { animation-delay: 0.2s; }
+        .action-card:nth-child(3) { animation-delay: 0.3s; }
+
+        /* Rx card list animation */
+        .rx-card { animation: cardSlide 0.5s var(--ease) both; }
+        .rx-card:nth-child(1) { animation-delay: 0.05s; }
+        .rx-card:nth-child(2) { animation-delay: 0.10s; }
+        .rx-card:nth-child(3) { animation-delay: 0.15s; }
+        .rx-card:nth-child(4) { animation-delay: 0.20s; }
+        .rx-card:nth-child(5) { animation-delay: 0.25s; }
+
+        /* Med pills strip inside rx-card */
+        .rx-med-pill {
+            display: inline-block; padding: 2px 10px;
+            background: var(--teal-xl); border: 1px solid rgba(3,105,161,0.15);
+            border-radius: 20px; font-size: 11px; color: var(--teal);
+            font-weight: 600; margin-right: 4px; margin-top: 4px;
+        }
+
+        /* Section title tweak */
+        .section-title-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .section-title-row h2 { margin-bottom: 0; }
+        .rx-count-badge {
+            font-size: 12px; color: var(--text-3); font-weight: 500;
+        }
+
+        /* Empty state inline icon */
+        .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    </style>
 </head>
 <body>
-    <div class="bg-blobs"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
     <div class="app-container">
         <!-- Nav -->
         <nav class="dash-nav">
-            <div class="logo-section">
-                <div class="logo-icon" style="font-size:24px;">💊</div>
-                <span class="logo-text" style="font-size:1.4rem;">MediScan</span>
+            <div class="logo-section" style="justify-content:flex-start;">
+                <div class="logo-icon" style="width:34px;height:34px;border-radius:9px;font-size:17px;">💊</div>
+                <span class="logo-text" style="font-size:1.35rem;">MediScan</span>
             </div>
             <div class="nav-right">
                 <span class="nav-user" id="nav-user"></span>
-                <button class="btn-nav" onclick="logout()">Logout</button>
+                <a href="reminders.html" class="btn-nav">⏰ Reminders</a>
+                <button class="btn-nav" onclick="logout()">Sign Out</button>
             </div>
         </nav>
 
         <main class="main-content">
+            <!-- Welcome banner -->
+            <div class="welcome-banner">
+                <div class="wb-eyebrow">Dashboard</div>
+                <h1 class="wb-name" id="welcome-name">Good day!</h1>
+                <p class="wb-sub">Manage your prescriptions, set reminders, and stay on top of your health.</p>
+            </div>
+
             <!-- Quick Actions -->
-            <div class="dash-actions">
+            <div class="dash-actions" style="margin-bottom:32px;">
                 <a href="index.html" class="action-card">
                     <span class="action-icon">📤</span>
                     <span class="action-label">Upload Prescription</span>
@@ -36,53 +112,73 @@
             </div>
 
             <!-- Prescriptions -->
-            <section class="dash-section">
-                <h2>📋 Your Prescriptions</h2>
-                <div id="prescriptions-list"><p class="loading-text">Loading...</p></div>
+            <section class="dash-section" style="animation-delay:0.15s;">
+                <div class="section-title-row">
+                    <h2>📋 Your Prescriptions</h2>
+                    <span class="rx-count-badge" id="rx-count"></span>
+                </div>
+                <div id="prescriptions-list">
+                    <p class="loading-text">Loading prescriptions…</p>
+                </div>
             </section>
         </main>
 
         <footer class="app-footer">
-            <p>MediScan — Built for understanding your prescriptions</p>
+            <p>MediScan — Built for clarity, not complexity &nbsp;·&nbsp; ⚠ Not a substitute for medical advice</p>
         </footer>
     </div>
 
     <script src="auth.js"></script>
     <script>
         if (!requireAuth()) throw 'redirect';
-
         const user = getUser();
-        document.getElementById('nav-user').textContent = user ? ('👤 ' + user.name) : '';
+
+        // Personalised greeting
+        if (user) {
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+            document.getElementById('welcome-name').textContent = greeting + ', ' + (user.name || 'there') + ' 👋';
+            document.getElementById('nav-user').textContent = '👤 ' + user.name;
+        }
 
         async function loadPrescriptions() {
             const container = document.getElementById('prescriptions-list');
             try {
-                const res = await fetch(API_BASE + '/prescriptions', { headers: authHeaders() });
+                const res  = await fetch(API_BASE + '/prescriptions', { headers: authHeaders() });
                 if (!res.ok) throw new Error('Failed to load');
                 const data = await res.json();
                 const list = data.prescriptions || [];
 
+                document.getElementById('rx-count').textContent = list.length + ' prescription' + (list.length !== 1 ? 's' : '');
+
                 if (list.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><p>No prescriptions yet.</p><a href="index.html" class="btn btn-primary" style="margin-top:12px;display:inline-flex;">📤 Upload Your First</a></div>';
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <p style="font-size:15px;font-weight:600;color:var(--text-2);margin-bottom:6px;">No prescriptions yet</p>
+                            <p style="font-size:13px;color:var(--text-3);margin-bottom:20px;">Upload your first prescription to get started</p>
+                            <a href="index.html" class="btn btn-primary" style="display:inline-flex;">📤 Upload Prescription</a>
+                        </div>`;
                     return;
                 }
 
-                container.innerHTML = list.map(rx => {
+                container.innerHTML = list.map((rx, i) => {
                     const meds = rx.medicines || [];
-                    const medNames = meds.map(m => m.name || 'Unknown').join(', ') || 'No medicines detected';
                     const date = new Date(rx.uploaded_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+                    const pills = meds.slice(0,4).map(m => `<span class="rx-med-pill">${m.name || 'Unknown'}</span>`).join('');
+                    const more  = meds.length > 4 ? `<span class="rx-med-pill">+${meds.length-4} more</span>` : '';
                     return `
-                        <div class="rx-card">
+                        <div class="rx-card" style="animation-delay:${i*0.06}s;">
                             <div class="rx-header">
                                 <span class="rx-file">📄 ${rx.filename || 'Prescription'}</span>
                                 <span class="rx-date">${date}</span>
                             </div>
-                            <div class="rx-meds">${medNames}</div>
-                            <div class="rx-count">${meds.length} medicine${meds.length !== 1 ? 's' : ''} detected</div>
+                            <div style="margin-top:8px;">${pills}${more}</div>
+                            <div class="rx-count" style="margin-top:8px;">${meds.length} medicine${meds.length !== 1 ? 's' : ''} detected</div>
                         </div>`;
                 }).join('');
             } catch (err) {
-                container.innerHTML = '<p style="color:var(--error);">Failed to load prescriptions.</p>';
+                container.innerHTML = '<p style="color:var(--err);font-size:13.5px;">Failed to load prescriptions.</p>';
             }
         }
 

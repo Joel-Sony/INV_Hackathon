@@ -1,75 +1,579 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediScan — Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
+    <title>MediScan — Sign In</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Login-specific layout */
+        body {
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        @media(max-width:700px) {
+            body {
+                overflow: auto;
+            }
+        }
+
+        .login-root {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        @media(max-width:700px) {
+            .login-root {
+                grid-template-columns: 1fr;
+            }
+
+            .login-panel {
+                display: none;
+            }
+        }
+
+        /* ── Left Illustration Panel ── */
+        .login-panel {
+            background: linear-gradient(145deg, #0369a1 0%, #0284c7 40%, #0891b2 70%, #059669 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-noise {
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Floating medical icons */
+        .panel-icons {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .pi {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.07);
+            font-size: 80px;
+            animation: floatIcon 8s ease-in-out infinite alternate;
+        }
+
+        .pi:nth-child(1) {
+            top: 8%;
+            left: 6%;
+            font-size: 60px;
+            animation-delay: 0s;
+        }
+
+        .pi:nth-child(2) {
+            top: 18%;
+            right: 8%;
+            font-size: 90px;
+            animation-delay: -2s;
+        }
+
+        .pi:nth-child(3) {
+            bottom: 20%;
+            left: 10%;
+            font-size: 70px;
+            animation-delay: -4s;
+        }
+
+        .pi:nth-child(4) {
+            bottom: 8%;
+            right: 12%;
+            font-size: 55px;
+            animation-delay: -6s;
+        }
+
+        .pi:nth-child(5) {
+            top: 45%;
+            left: 3%;
+            font-size: 45px;
+            animation-delay: -1s;
+        }
+
+        @keyframes floatIcon {
+            from {
+                transform: translateY(0) rotate(-5deg);
+                opacity: 0.06;
+            }
+
+            to {
+                transform: translateY(-20px) rotate(5deg);
+                opacity: 0.12;
+            }
+        }
+
+        /* Panel SVG illustration */
+        .panel-illustration {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 36px;
+            animation: fadeUp 1s var(--ease) 0.2s both;
+        }
+
+        .ill-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            animation: illPulse 4s ease infinite;
+        }
+
+        @keyframes illPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(255, 255, 255, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2), 0 0 0 20px rgba(255, 255, 255, 0.03);
+            }
+        }
+
+        .ill-icon {
+            font-size: 72px;
+        }
+
+        .panel-heading {
+            font-family: var(--serif);
+            font-size: 2rem;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 12px;
+            animation: fadeUp 1s var(--ease) 0.3s both;
+        }
+
+        .panel-sub {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.72);
+            text-align: center;
+            line-height: 1.65;
+            max-width: 300px;
+            animation: fadeUp 1s var(--ease) 0.4s both;
+        }
+
+        /* Stats strip */
+        .panel-stats {
+            display: flex;
+            gap: 24px;
+            margin-top: 40px;
+            animation: fadeUp 1s var(--ease) 0.5s both;
+        }
+
+        .ps {
+            text-align: center;
+        }
+
+        .ps-n {
+            font-family: var(--serif);
+            font-size: 1.6rem;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .ps-l {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 4px;
+        }
+
+        .ps-sep {
+            width: 1px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ── Right Form Panel ── */
+        .login-form-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 40px;
+            background: var(--bg);
+            position: relative;
+        }
+
+        .login-form-inner {
+            width: 100%;
+            max-width: 400px;
+            animation: fadeUp 0.8s var(--ease) 0.1s both;
+        }
+
+        .lf-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 36px;
+        }
+
+        .lf-logo-mark {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--teal), var(--teal-l));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 14px rgba(3, 105, 161, 0.3);
+        }
+
+        .lf-logo-name {
+            font-family: var(--serif);
+            font-size: 1.6rem;
+            color: var(--text);
+        }
+
+        .lf-title {
+            font-family: var(--serif);
+            font-size: 2rem;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .lf-sub {
+            font-size: 14px;
+            color: var(--text-2);
+            margin-bottom: 32px;
+        }
+
+        /* Form fields */
+        .field {
+            margin-bottom: 18px;
+            position: relative;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--text-2);
+            margin-bottom: 7px;
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--r-sm);
+            background: var(--surface);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 14.5px;
+            transition: all 0.2s var(--ease);
+            outline: none;
+        }
+
+        .field-input:focus {
+            border-color: var(--teal-l);
+            box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+        }
+
+        .field-input::placeholder {
+            color: var(--text-3);
+        }
+
+        /* Submit */
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: var(--r-sm);
+            background: linear-gradient(135deg, var(--teal), var(--teal-l));
+            color: #fff;
+            font-family: var(--sans);
+            font-size: 14.5px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s var(--ease);
+            box-shadow: 0 4px 16px rgba(3, 105, 161, 0.4);
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(3, 105, 161, 0.5);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        /* Demo accounts */
+        .demo-box {
+            margin-top: 24px;
+            padding: 16px 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--teal), var(--teal-l), var(--sage-l));
+        }
+
+        .demo-title {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-3);
+            margin-bottom: 10px;
+        }
+
+        .demo-account {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .demo-account:hover {
+            background: var(--teal-xl);
+        }
+
+        .demo-account:last-child {
+            margin-bottom: 0;
+        }
+
+        .demo-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--teal-l);
+            flex-shrink: 0;
+        }
+
+        .demo-creds {
+            font-size: 12.5px;
+            color: var(--text-2);
+        }
+
+        .demo-creds strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* Error */
+        .lf-error {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(220, 38, 38, 0.05);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-radius: var(--r-sm);
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            color: var(--err);
+            font-size: 13.5px;
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-6px);
+            }
+
+            75% {
+                transform: translateX(6px);
+            }
+        }
+
+        .lf-error.visible {
+            display: flex;
+        }
+
+        /* Disclaimer */
+        .lf-disclaimer {
+            margin-top: 20px;
+            font-size: 11.5px;
+            color: var(--text-3);
+            text-align: center;
+            line-height: 1.6;
+        }
+    </style>
 </head>
+
 <body>
-    <div class="bg-blobs"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
-    <div class="app-container">
-        <header class="app-header">
-            <div class="logo-section">
-                <div class="logo-icon">💊</div>
-                <h1 class="logo-text">MediScan</h1>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="login-root">
+        <!-- Left illustration panel -->
+        <div class="login-panel">
+            <div class="panel-noise"></div>
+            <div class="panel-icons">
+                <div class="pi">💊</div>
+                <div class="pi">🩺</div>
+                <div class="pi">🔬</div>
+                <div class="pi">🧬</div>
+                <div class="pi">🏥</div>
             </div>
-            <p class="tagline">Sign in to manage your prescriptions & reminders</p>
-        </header>
 
-        <main class="main-content">
-            <div class="upload-card" style="max-width:420px;margin:0 auto;">
-                <div style="padding:32px 28px;">
-                    <h2 style="margin-bottom:24px;text-align:center;font-size:1.4rem;">Sign In</h2>
-
-                    <div class="error-card" id="login-error" style="display:none;margin-bottom:16px;">
-                        <p id="login-error-msg" style="color:var(--error);font-size:0.9rem;"></p>
-                    </div>
-
-                    <form id="login-form">
-                        <label class="form-label">Email</label>
-                        <input type="email" id="email" class="form-input" placeholder="arjun@demo.com" required>
-
-                        <label class="form-label" style="margin-top:16px;">Password</label>
-                        <input type="password" id="password" class="form-input" placeholder="demo123" required>
-
-                        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:24px;">
-                            Sign In
-                        </button>
-                    </form>
-
-                    <div style="margin-top:24px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);">
-                        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px;">Demo Accounts:</p>
-                        <p style="font-size:0.82rem;color:var(--text-secondary);">
-                            <strong>athulkishor2004@gmail.com</strong> / demo123<br>
-                            <strong>priya@demo.com</strong> / demo123<br>
-                            <strong>rahul@demo.com</strong> / demo123
-                        </p>
-                    </div>
+            <div class="panel-illustration">
+                <div class="ill-circle">
+                    <div class="ill-icon">💊</div>
                 </div>
             </div>
-        </main>
 
-        <footer class="app-footer">
-            <p>MediScan — Built for understanding your prescriptions</p>
-        </footer>
+            <h2 class="panel-heading">Your prescriptions,<br><em>decoded.</em></h2>
+            <p class="panel-sub">Upload any handwritten or printed prescription. Our AI pipeline reads, cleans, and
+                explains every medicine in plain language.</p>
+
+            <div class="panel-stats">
+                <div class="ps">
+                    <div class="ps-n">99%</div>
+                    <div class="ps-l">OCR accuracy</div>
+                </div>
+                <div class="ps-sep"></div>
+                <div class="ps">
+                    <div class="ps-n">&lt;10s</div>
+                    <div class="ps-l">Scan time</div>
+                </div>
+                <div class="ps-sep"></div>
+                <div class="ps">
+                    <div class="ps-n">4-step</div>
+                    <div class="ps-l">AI pipeline</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right form -->
+        <div class="login-form-wrap">
+            <div class="login-form-inner">
+                <div class="lf-logo">
+                    <div class="lf-logo-mark">💊</div>
+                    <span class="lf-logo-name">MediScan</span>
+                </div>
+
+                <h1 class="lf-title">Welcome back</h1>
+                <p class="lf-sub">Sign in to your account to continue</p>
+
+                <div class="lf-error" id="login-error">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span id="login-error-msg"></span>
+                </div>
+
+                <form id="login-form">
+                    <div class="field">
+                        <label class="field-label" for="email">Email address</label>
+                        <input type="email" id="email" class="field-input" placeholder="arjun@demo.com" required
+                            autocomplete="email">
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="password">Password</label>
+                        <input type="password" id="password" class="field-input" placeholder="••••••••" required
+                            autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn-login" id="btn-login">Sign In</button>
+                </form>
+
+                <div class="demo-box">
+                    <div class="demo-title">Demo Accounts — click to fill</div>
+                    <div class="demo-account" onclick="fillDemo('athulkishor2004@gmail.com','demo123')">
+                        <div class="demo-dot"></div>
+                        <div class="demo-creds"><strong>athulkishor2004@gmail.com</strong> · demo123</div>
+                    </div>
+                    <div class="demo-account" onclick="fillDemo('priya@demo.com','demo123')">
+                        <div class="demo-dot"></div>
+                        <div class="demo-creds"><strong>priya@demo.com</strong> · demo123</div>
+                    </div>
+                    <div class="demo-account" onclick="fillDemo('rahul@demo.com','demo123')">
+                        <div class="demo-dot"></div>
+                        <div class="demo-creds"><strong>rahul@demo.com</strong> · demo123</div>
+                    </div>
+                </div>
+
+                <p class="lf-disclaimer">⚠ MediScan is not a substitute for professional medical advice.</p>
+            </div>
+        </div>
     </div>
 
     <script src="auth.js"></script>
     <script>
-        // If already logged in, redirect to dashboard
         if (getToken()) window.location.href = 'dashboard.html';
+
+        function fillDemo(email, pass) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = pass;
+            document.getElementById('email').focus();
+        }
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const errEl = document.getElementById('login-error');
             const errMsg = document.getElementById('login-error-msg');
-            errEl.style.display = 'none';
+            const btn = document.getElementById('btn-login');
+            errEl.classList.remove('visible');
+            btn.textContent = 'Signing in…'; btn.disabled = true;
 
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
-
             try {
                 const res = await fetch(API_BASE + '/auth/login', {
                     method: 'POST',
@@ -78,14 +582,16 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || 'Login failed');
-
                 setAuth(data.token, data.user);
-                window.location.href = 'dashboard.html';
+                btn.textContent = '✓ Redirecting…';
+                setTimeout(() => window.location.href = 'dashboard.html', 400);
             } catch (err) {
-                errEl.style.display = 'block';
+                errEl.classList.add('visible');
                 errMsg.textContent = err.message;
+                btn.textContent = 'Sign In'; btn.disabled = false;
             }
         });
     </script>
 </body>
+
 </html>
