@@ -6,9 +6,10 @@
     <meta name="description" content="MediScan — AI-powered prescription scanner">
     <title>MediScan — Prescription Scanner</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
+    <script>window.onerror=function(m,s,l,c,e){alert('JS Error: '+m+' at line '+l);console.error(e);}</script>
     <div class="bg-blobs">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
@@ -76,20 +77,40 @@
                     <div class="progress-steps">
                         <div class="step" id="step-upload"><div class="step-dot"></div><span>Upload</span></div>
                         <div class="step" id="step-ocr"><div class="step-dot"></div><span>OCR</span></div>
-                        <div class="step" id="step-ai"><div class="step-dot"></div><span>AI Analysis</span></div>
+                        <div class="step" id="step-cleanup"><div class="step-dot"></div><span>LLM Cleanup</span></div>
+                        <div class="step" id="step-explain"><div class="step-dot"></div><span>Explain</span></div>
                     </div>
                 </div>
             </section>
 
             <!-- Results -->
             <section class="results-section" id="results-section" style="display:none;">
-                <div class="result-card" id="ocr-result-card">
-                    <div class="result-header">
-                        <h3>📝 Extracted Text</h3>
-                        <span class="result-subtitle" id="result-filename"></span>
-                    </div>
-                    <pre class="ocr-text" id="ocr-text"></pre>
+                <!-- Pipeline Status -->
+                <div class="pipeline-status" id="pipeline-status">
+                    <h3>🔗 Pipeline Status</h3>
+                    <div class="pipeline-steps" id="pipeline-steps"></div>
                 </div>
+
+                <!-- Raw OCR Text -->
+                <div class="result-card" id="raw-ocr-card" style="display:none;">
+                    <div class="result-header">
+                        <h3>🔍 Raw OCR Output</h3>
+                        <span class="result-subtitle" id="result-filename"></span>
+                        <span class="pipeline-badge badge-raw">Tesseract Multi-Pass</span>
+                    </div>
+                    <pre class="ocr-text" id="raw-ocr-text"></pre>
+                </div>
+
+                <!-- Cleaned Text -->
+                <div class="result-card" id="cleaned-text-card" style="display:none;">
+                    <div class="result-header">
+                        <h3>✨ LLM-Cleaned Text</h3>
+                        <span class="pipeline-badge badge-cleaned">OpenRouter</span>
+                    </div>
+                    <pre class="ocr-text cleaned" id="cleaned-text"></pre>
+                </div>
+
+                <!-- Medicine Cards -->
                 <div id="medicines-container"></div>
                 <div class="error-card" id="error-card" style="display:none;">
                     <p class="error-title" id="error-title">⚠️ Error</p>
@@ -104,6 +125,6 @@
             <p class="disclaimer">⚠️ Not a substitute for professional medical advice</p>
         </footer>
     </div>
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>

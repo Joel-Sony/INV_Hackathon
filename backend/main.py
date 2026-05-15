@@ -1,13 +1,16 @@
 """
 MediScan — FastAPI backend server.
-Handles prescription image uploads, OCR extraction, and AI explanation.
+Pipeline: Image Upload → OCR (Tesseract multi-pass) → LLM Cleanup → LLM Explain
+All LLM calls go through OpenRouter.
 """
 
 import os
-import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # Create uploads directory
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
@@ -15,7 +18,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = FastAPI(
     title="MediScan API",
-    description="Prescription scanner with OCR and AI explanation",
+    description="Prescription scanner with OCR and AI explanation via OpenRouter",
     version="1.0.0"
 )
 
@@ -33,6 +36,21 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
+def _validate_file(filename: str, content: bytes):
+    """Validate file extension and size."""
+    ext = os.path.splitext(filename or "")[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{ext}' not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+        )
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)} MB"
+        )
+
+
 @app.get("/")
 async def root():
     return {"message": "MediScan API is running", "version": "1.0.0"}
@@ -41,33 +59,18 @@ async def root():
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     """
-    Upload a prescription image file.
-    Returns file info and attempts OCR if tesseract is available.
+    Upload a prescription image and run OCR only.
+    Returns raw OCR text without LLM processing.
     """
-    # Validate file extension
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File type '{ext}' not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-
-    # Read file content
     content = await file.read()
+    _validate_file(file.filename, content)
 
-    # Validate file size
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)} MB"
-        )
-
-    # Save file to uploads directory
+    # Save file
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as f:
         f.write(content)
 
-    # Attempt OCR
+    # Run OCR
     ocr_text = None
     ocr_error = None
     try:
@@ -89,56 +92,70 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/scan")
 async def scan_prescription(file: UploadFile = File(...)):
     """
-    Full pipeline: Upload → OCR → AI Explanation.
-    Returns OCR text and structured medicine information.
+    Full pipeline: Upload → OCR → LLM Cleanup → LLM Explain.
+    
+    Pipeline steps visible in response:
+    1. raw_ocr: Raw text from Tesseract multi-pass
+    2. cleaned_text: LLM-cleaned version of the OCR text
+    3. medicines: Extracted & explained medicines
+    4. pipeline: Status of each step
     """
-    # Validate file extension
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File type '{ext}' not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-
     content = await file.read()
+    _validate_file(file.filename, content)
 
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)} MB"
-        )
+    # Save file
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_path, "wb") as f:
+        f.write(content)
 
-    # Step 1: OCR
-    try:
-        from ocr import extract_text
-        ocr_text = extract_text(content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"OCR failed: {str(e)}")
-
-    if not ocr_text:
-        raise HTTPException(status_code=422, detail="No text could be extracted from the image")
-
-    # Step 2: AI Explanation
-    try:
-        from ai import explain_prescription
-        explanation = await explain_prescription(ocr_text)
-    except Exception as e:
-        # Return OCR text even if AI fails
-        return {
-            "ocr_text": ocr_text,
-            "medicines": [],
-            "filename": file.filename,
-            "status": "partial",
-            "error": f"AI explanation failed: {str(e)}"
-        }
-
-    return {
-        "ocr_text": ocr_text,
-        "medicines": explanation.get("medicines", []),
+    response = {
         "filename": file.filename,
+        "raw_ocr": "",
+        "cleaned_text": "",
+        "medicines": [],
+        "pipeline": {
+            "upload": "success",
+            "ocr": "pending",
+            "llm_cleanup": "pending",
+            "llm_explain": "pending"
+        },
         "status": "success",
         "error": None
     }
+
+    # Step 1: OCR extraction (Tesseract multi-pass)
+    try:
+        from ocr import extract_text
+        raw_ocr = extract_text(content)
+        response["raw_ocr"] = raw_ocr
+        response["pipeline"]["ocr"] = "success"
+    except Exception as e:
+        response["pipeline"]["ocr"] = f"failed: {str(e)}"
+        response["status"] = "partial"
+        response["error"] = f"OCR failed: {str(e)}"
+        return response
+
+    if not raw_ocr or not raw_ocr.strip():
+        response["pipeline"]["ocr"] = "no_text_found"
+        response["status"] = "partial"
+        response["error"] = "No text could be extracted from the image"
+        return response
+
+    # Step 2 + 3: LLM cleanup + medicine extraction
+    try:
+        from ai import full_pipeline
+        ai_result = await full_pipeline(raw_ocr)
+        response["cleaned_text"] = ai_result.get("cleaned_text", "")
+        response["medicines"] = ai_result.get("medicines", [])
+        response["pipeline"]["llm_cleanup"] = ai_result["pipeline"]["ocr_cleanup"]
+        response["pipeline"]["llm_explain"] = ai_result["pipeline"]["medicine_extraction"]
+    except Exception as e:
+        response["status"] = "partial"
+        response["error"] = f"AI pipeline failed: {str(e)}"
+        response["pipeline"]["llm_cleanup"] = f"failed: {str(e)}"
+        response["pipeline"]["llm_explain"] = "skipped"
+
+    return response
 
 
 @app.get("/health")
@@ -152,15 +169,10 @@ async def health_check():
     except Exception:
         pass
 
-    anthropic_ok = False
-    try:
-        import anthropic
-        anthropic_ok = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    except ImportError:
-        pass
+    api_key_set = bool(os.getenv("API_KEY"))
 
     return {
         "status": "ok",
-        "tesseract": tesseract_ok,
-        "anthropic_configured": anthropic_ok,
+        "tesseract_installed": tesseract_ok,
+        "openrouter_api_key": api_key_set,
     }
