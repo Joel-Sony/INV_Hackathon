@@ -6,7 +6,9 @@
     <meta name="description" content="MediScan — AI-powered prescription scanner">
     <title>MediScan — Prescription Scanner</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <link rel="stylesheet" href="style.css?v=2">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
     <script>window.onerror=function(m,s,l,c,e){alert('JS Error: '+m+' at line '+l);console.error(e);}</script>
@@ -118,6 +120,20 @@
                 </div>
                 <button class="btn btn-outline" id="btn-scan-again">🔄 Scan Another Prescription</button>
             </section>
+
+            <!-- Pharmacies Map Section -->
+            <section class="map-section" id="map-section">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h3>📍 Nearby Pharmacies</h3>
+                        <button class="btn btn-primary" id="btn-find-pharmacies" style="padding: 8px 16px; font-size: 0.85rem; margin-left: auto;">Find</button>
+                    </div>
+                    <div class="map-container" id="map-container" style="display:none;">
+                        <p class="map-status" id="map-status" style="padding: 20px; text-align: center; color: var(--text-secondary);">Requesting location...</p>
+                        <div id="pharmacy-map" style="height: 400px; width: 100%; display: none;"></div>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <footer class="app-footer">
@@ -125,6 +141,33 @@
             <p class="disclaimer">⚠️ Not a substitute for professional medical advice</p>
         </footer>
     </div>
+
+    <!-- Reminder Modal -->
+    <div class="modal-overlay" id="reminder-modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔔 Set Reminder</h3>
+                <button class="btn-remove" id="btn-close-modal" style="width:28px; height:28px; font-size:0.9rem;">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 20px 24px;">
+                <p id="reminder-med-name" style="font-weight: 600; margin-bottom: 16px; color: var(--accent-light);">Medicine Name</p>
+                <div style="margin-bottom: 20px;">
+                    <label for="reminder-time" style="display:block; margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">Time of day</label>
+                    <input type="time" id="reminder-time" style="width:100%; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-primary); color:var(--text-primary); font-family:var(--font);" required>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" id="btn-cancel-reminder" style="padding: 8px 16px; font-size: 0.9rem;">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-reminder" style="padding: 8px 16px; font-size: 0.9rem;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Reminders FAB -->
+    <button class="fab-reminders" id="btn-view-reminders" title="View Reminders">
+        🔔 <span class="badge" id="reminders-count" style="display:none;">0</span>
+    </button>
+
     <script src="app.js?v=2"></script>
 </body>
 </html>
